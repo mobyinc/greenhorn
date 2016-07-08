@@ -17,6 +17,10 @@ module Greenhorn
       )
     end
 
+    def commerce
+      Commerce.new
+    end
+
     class Slug
       def initialize(string)
         @slug = string.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
@@ -55,6 +59,10 @@ module Greenhorn
       before_create do
         self.uid = UID.new
         self.dateCreated = Time.now.utc
+
+        if respond_to?(:postDate)
+          self.postDate = Time.now.utc
+        end
       end
 
       before_save do
@@ -286,6 +294,10 @@ module Greenhorn
       def now
         Time.current
       end
+
+      def destroy_all
+        model.destroy_all
+      end
     end
 
     class FieldCollection < CraftCollection
@@ -356,6 +368,97 @@ module Greenhorn
             postDate: now,
           )
         end
+      end
+    end
+
+    class Commerce
+      class Product < Model
+        def self.table
+          'commerce_products'
+        end
+
+        belongs_to :element, foreign_key: 'id'
+        belongs_to :type, class_name: 'ProductType', foreign_key: 'typeId'
+        belongs_to :tax_category, foreign_key: 'taxCategoryId'
+        has_one :element_locale, through: :element
+      end
+
+      class ProductType < Model
+        def self.table
+          'commerce_producttypes'
+        end
+
+        belongs_to :field_layout, foreign_key: 'fieldLayoutId'
+        belongs_to :variant_field_layout, class_name: 'FieldLayout', foreign_key: 'variantFieldLayoutId'
+
+        before_create do
+          self.handle = Slug.new(name) unless handle.present?
+          self.titleFormat = '{product.title}' unless titleFormat.present?
+          self.field_layout = FieldLayout.create!(type: 'Commerce_Product')
+          self.variant_field_layout = FieldLayout.create!(type: 'Commerce_Variant')
+        end
+      end
+
+      class TaxCategory < Model
+        def self.table
+          'commerce_taxcategories'
+        end
+      end
+
+      class ProductTypeCollection < CraftCollection
+        def find_or_create_by(attrs)
+          transaction { ProductType.find_or_create_by!(attrs) }
+        end
+
+        def create(attrs)
+          transaction { ProductType.create!(attrs) }
+        end
+      end
+
+      class ProductCollection < CraftCollection
+        def model
+          Product
+        end
+
+        def create(attrs)
+          raise "Can't create a product without a type" if attrs[:type].nil?
+
+          transaction do
+            non_field_attrs = %i(title type defaultPrice)
+            field_attrs = attrs
+              .reject { |key, value| non_field_attrs.include?(key) }
+              .map { |key, value| ["field_#{key}", value] }
+              .to_h
+            content_attrs = field_attrs.merge(title: attrs[:title])
+
+            element = Element.create!(
+              type: 'Commerce_Product',
+              content: Content.new(content_attrs)
+            )
+
+            slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
+            ElementLocale.create!(
+              element: element,
+              slug: slug,
+              locale: 'en_us'
+            )
+
+            Product.create!(
+              id: element.id,
+              type: attrs[:type],
+              defaultPrice: attrs[:defaultPrice],
+              tax_category: TaxCategory.first
+            )
+          end
+        end
+      end
+
+      def products
+        @products ||= ProductCollection.new
+      end
+
+      def product_types
+        @product_types ||= ProductTypeCollection.new
       end
     end
   end
