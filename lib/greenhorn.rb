@@ -206,20 +206,15 @@ module Greenhorn
 
     class Field < Model
       class << self
-        def type_mapping
-          {
-            :plain_text => 'PlainText',
-            :rich_text => 'RichText',
-            :number => 'Number'
-          }
-        end
-
-        def craft_type_for(type)
-          type_mapping[type]
+        def allowed_types
+          %w(
+            PlainText
+            RichText
+            Number
+          )
         end
 
         def verify_field_type!(type)
-          allowed_types = type_mapping.keys
           raise "Unknown field type `#{type}`. Must be one of #{allowed_types.map(&:to_sym)}" unless allowed_types.include?(type)
         end
 
@@ -383,7 +378,7 @@ module Greenhorn
       end
 
       def cleaned_attrs(attrs)
-        type = attrs[:type] || :plain_text
+        type = attrs[:type] || 'PlainText'
         Field.verify_field_type!(type)
 
         settings_hash = case type
@@ -399,7 +394,7 @@ module Greenhorn
                         end
         {
           name: attrs[:name],
-          type: Field.craft_type_for(type),
+          type: type,
           settings: settings_hash
         }
       end
@@ -540,12 +535,10 @@ module Greenhorn
         belongs_to :product, foreign_key: 'productId'
 
         def self.create_from_attrs(attrs)
-          non_field_attrs = %i(title sku default price sort_order stock unlimited_stock product)
+          non_field_attrs = %i(title product).concat(column_names.map(&:to_sym))
           field_attrs = attrs
             .reject { |key, value| non_field_attrs.include?(key) }
-            .map { |key, value| [key.to_s.camelize(:lower), value] }
-            .to_h
-          field_attrs = field_attrs.map { |key, value| ["field_#{key}", value] }.to_h
+            .map { |key, value| ["field_#{key}", value] }.to_h
           content_attrs = field_attrs.merge(title: attrs[:title])
 
           element = Element.create!(
@@ -566,7 +559,7 @@ module Greenhorn
             price: attrs[:price],
             sku: attrs[:sku],
             stock: attrs[:stock],
-            unlimitedStock: attrs[:unlimited_stock],
+            unlimitedStock: attrs[:unlimitedStock],
             product: attrs[:product]
           )
         end
@@ -612,11 +605,8 @@ module Greenhorn
           raise "Can't create a product without a type" if attrs[:type].nil?
 
           transaction do
-            non_field_attrs = %i(title type default_sku default_price)
-            field_attrs = attrs
-              .reject { |key, value| non_field_attrs.include?(key) }
-              .map { |key, value| [key.to_s.camelize(:lower), value] }
-              .to_h
+            non_field_attrs = %i(title type defaultSku defaultPrice)
+            field_attrs = attrs.reject { |key, value| non_field_attrs.include?(key) }
             attrs[:type].verify_fields_attached!(field_attrs.keys)
             field_attrs = field_attrs.map { |key, value| ["field_#{key}", value] }.to_h
             content_attrs = field_attrs.merge(title: attrs[:title])
@@ -636,19 +626,19 @@ module Greenhorn
             product = Product.create!(
               id: element.id,
               type: attrs[:type],
-              defaultSku: attrs[:default_sku],
-              defaultPrice: attrs[:default_price],
+              defaultSku: attrs[:defaultSku],
+              defaultPrice: attrs[:defaultPrice],
               tax_category: TaxCategory.default,
             )
 
             default_variant_params = attrs[:default_variant_params] || {}
-            default_variant_params[:default] = true
+            default_variant_params[:isDefault] = true
             default_variant_params[:title] ||= attrs[:title]
-            default_variant_params[:sku] ||= attrs[:default_sku]
-            default_variant_params[:price] ||= attrs[:default_price]
+            default_variant_params[:sku] ||= attrs[:defaultSku]
+            default_variant_params[:price] ||= attrs[:defaultPrice]
             default_variant_params[:stock] ||= 0
-            unlimited_stock = default_variant_params[:unlimited_stock] || true
-            default_variant_params[:unlimited_stock] = from_boolean(unlimited_stock)
+            unlimited_stock = default_variant_params[:unlimitedStock] || true
+            default_variant_params[:unlimitedStock] = from_boolean(unlimited_stock)
             default_variant_params[:product] = product
 
             product.default_variant = Variant.create_from_attrs(default_variant_params)
