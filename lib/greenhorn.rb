@@ -1,6 +1,7 @@
 require 'greenhorn/version'
 require 'active_record'
 require 'byebug'
+require 'uri'
 
 module Greenhorn
   class Craft
@@ -22,8 +23,14 @@ module Greenhorn
     end
 
     class Slug
-      def initialize(string)
-        @slug = string.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
+      def initialize(string, type = :hyphen)
+        @slug = string.downcase.strip
+        @slug = if type == :hyphen
+                  @slug.gsub(' ', '-').gsub(/[^\w-]/, '')
+                else
+                  @slug.gsub(' ', '_').gsub(/[^\w-]/, '')
+                end
+        @slug = @slug.gsub(/[^\w-]/, '')
       end
 
       def to_s
@@ -306,13 +313,13 @@ module Greenhorn
     end
 
     class AssetFolder < Model
-      self.table_name = 'assetfolders'
-      has_many :asset_files, foreign_key: 'folderId'
-      delegate :path, to: :asset_source
-
-      def asset_source
-        AssetSource.find_by(name: name)
+      def self.table
+        'assetfolders'
       end
+
+      has_many :asset_files, foreign_key: 'folderId'
+      belongs_to :asset_source, foreign_key: 'sourceId'
+      delegate :path, to: :asset_source
     end
 
     class AssetFile < Model
@@ -325,7 +332,34 @@ module Greenhorn
     end
 
     class AssetSource < Model
-      self.table_name = 'assetsources'
+      class << self
+        def table
+          'assetsources'
+        end
+      end
+
+      SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location)
+
+      belongs_to :field_layout, foreign_key: 'fieldLayoutId'
+      has_one :asset_folder, foreign_key: 'sourceId'
+
+      validate :config_is_valid
+      validate :url_prefix_is_valid
+      serialize :settings, JSON
+
+      before_create do
+        self.handle = Slug.new(name, :underscore) unless handle.present?
+        self.asset_folder = AssetFolder.new(name: name, path: '')
+      end
+      after_create do
+        update(field_layout: FieldLayout.new(type: 'Asset'))
+      end
+
+      def initialize(attrs)
+        attrs[:settings] = attrs.slice(*SETTINGS_ATTRS)
+        SETTINGS_ATTRS.each { |key| attrs.delete(key) }
+        super(attrs)
+      end
 
       def config
         JSON.parse(settings)
@@ -334,6 +368,24 @@ module Greenhorn
       def path
         return nil if config['path'].nil?
         config['path'].sub('{basePath}', 'public/')
+      end
+
+      private
+
+      def required_settings
+        case type
+        when 'S3'
+          %w(keyId secret bucket location)
+        end
+      end
+
+      def config_is_valid
+        missing_attrs = required_settings.reject { |key| settings.include?(key) }
+        errors.add(:base, "Missing attributes required for #{type} source: #{missing_attrs}") if missing_attrs.present?
+      end
+
+      def url_prefix_is_valid
+        errors.add(:base, "`urlPrefix` required if `publicUrls = true`") if settings['publicUrls'] && !settings['urlPrefix']
       end
     end
 
@@ -347,6 +399,10 @@ module Greenhorn
 
     def sections
       @sections || SectionCollection.new
+    end
+
+    def asset_sources
+      AssetSource
     end
 
     class CraftCollection
