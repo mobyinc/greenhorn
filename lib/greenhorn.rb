@@ -58,8 +58,15 @@ module Greenhorn
     class Model < ActiveRecord::Base
       self.inheritance_column = :_type_disabled
       self.abstract_class = true
-      def self.table
-        table_name
+
+      class << self
+        def table
+          table_name
+        end
+
+        def from_boolean(bool)
+          bool ? 1 : 0
+        end
       end
 
       def craft_table_name
@@ -350,6 +357,7 @@ module Greenhorn
     class CraftCollection
       delegate :create,
         :where,
+        :destroy_all,
         to: :model
 
       def model
@@ -362,10 +370,6 @@ module Greenhorn
 
       def now
         Time.current
-      end
-
-      def destroy_all
-        model.destroy_all
       end
 
       def from_boolean(bool)
@@ -483,7 +487,9 @@ module Greenhorn
         belongs_to :element, foreign_key: 'id'
         belongs_to :type, class_name: 'ProductType', foreign_key: 'typeId'
         belongs_to :tax_category, foreign_key: 'taxCategoryId'
+        belongs_to :default_variant, class_name: 'Variant', foreign_key: 'defaultVariantId'
         has_one :element_locale, through: :element
+        has_many :variants, foreign_key: 'productId', dependent: :destroy
       end
 
       class ProductType < Model
@@ -523,6 +529,46 @@ module Greenhorn
           def default
             find_by(default: 1)
           end
+        end
+      end
+
+      class Variant < Model
+        def self.table
+          'commerce_variants'
+        end
+
+        belongs_to :product, foreign_key: 'productId'
+
+        def self.create_from_attrs(attrs)
+          non_field_attrs = %i(title sku default price sort_order stock unlimited_stock product)
+          field_attrs = attrs
+            .reject { |key, value| non_field_attrs.include?(key) }
+            .map { |key, value| [key.to_s.camelize(:lower), value] }
+            .to_h
+          field_attrs = field_attrs.map { |key, value| ["field_#{key}", value] }.to_h
+          content_attrs = field_attrs.merge(title: attrs[:title])
+
+          element = Element.create!(
+            type: 'Commerce_Variant',
+            content: Content.new(content_attrs)
+          )
+
+          slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
+          ElementLocale.create!(
+            element: element,
+            slug: slug,
+            locale: 'en_us'
+          )
+
+          Variant.create!(
+            id: element.id,
+            isDefault: from_boolean(attrs[:default]),
+            price: attrs[:price],
+            sku: attrs[:sku],
+            stock: attrs[:stock],
+            unlimitedStock: attrs[:unlimited_stock],
+            product: attrs[:product]
+          )
         end
       end
 
@@ -587,14 +633,37 @@ module Greenhorn
               locale: 'en_us'
             )
 
-            Product.create!(
+            product = Product.create!(
               id: element.id,
               type: attrs[:type],
               defaultSku: attrs[:default_sku],
               defaultPrice: attrs[:default_price],
-              tax_category: TaxCategory.default
+              tax_category: TaxCategory.default,
             )
+
+            default_variant_params = attrs[:default_variant_params] || {}
+            default_variant_params[:default] = true
+            default_variant_params[:title] ||= attrs[:title]
+            default_variant_params[:sku] ||= attrs[:default_sku]
+            default_variant_params[:price] ||= attrs[:default_price]
+            default_variant_params[:stock] ||= 0
+            unlimited_stock = default_variant_params[:unlimited_stock] || true
+            default_variant_params[:unlimited_stock] = from_boolean(unlimited_stock)
+            default_variant_params[:product] = product
+
+            product.default_variant = Variant.create_from_attrs(default_variant_params)
+            product
           end
+        end
+      end
+
+      class VariantCollection < CraftCollection
+        def model
+          Variant
+        end
+
+        def create(attrs)
+          transaction { Variant.create_from_attrs(attrs) }
         end
       end
 
@@ -604,6 +673,10 @@ module Greenhorn
 
       def product_types
         @product_types ||= ProductTypeCollection.new
+      end
+
+      def variants
+        @variants ||= VariantCollection.new
       end
     end
   end
