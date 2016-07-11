@@ -31,6 +31,16 @@ module Greenhorn
       end
     end
 
+    class Handle
+      def initialize(string)
+        @handle = string.gsub(' ', '').camelize(:lower)
+      end
+
+      def to_s
+        @handle
+      end
+    end
+
     class UID
       def initialize
         @uid = [sub(8), sub(4), sub(4), sub(4), sub(12)].join('-')
@@ -138,13 +148,21 @@ module Greenhorn
           'content'
         end
 
-        def add_field_column(handle)
+        def add_field_column(handle, type = :text)
           last_field_column = column_names.reverse.find { |col| col[0..5] == 'field_' }
-          column_name = "field_#{handle.downcase}"
+          column_name = "field_#{handle}"
           ActiveRecord::Migration.class_eval do
-            add_column :craft_content, column_name, :text, after: last_field_column
+            add_column :craft_content, column_name, type, after: last_field_column
           end
           reset_column_information
+        end
+
+        def remove_field_column(handle)
+          column_name = "field_#{handle}"
+          table_name = self.table_name
+          ActiveRecord::Migration.class_eval do
+            remove_column table_name, column_name
+          end
         end
       end
 
@@ -180,15 +198,56 @@ module Greenhorn
     class Relation < Model; end
 
     class Field < Model
+      class << self
+        def type_mapping
+          {
+            :plain_text => 'PlainText',
+            :rich_text => 'RichText',
+            :number => 'Number'
+          }
+        end
+
+        def craft_type_for(type)
+          type_mapping[type]
+        end
+
+        def verify_field_type!(type)
+          allowed_types = type_mapping.keys
+          raise "Unknown field type `#{type}`. Must be one of #{allowed_types.map(&:to_sym)}" unless allowed_types.include?(type)
+        end
+
+        def column_type_mapping
+          {
+            'PlainText' => :text,
+            'RichText' => :text,
+            'Number' => :integer
+          }
+        end
+
+        def column_type_for(type)
+          column_type_mapping[type]
+        end
+
+        def verify_column_type(craft_type)
+          allowed_types = column_type_mapping.keys
+          raise "Don't know what column type should be for `#{craft_type}`" unless allowed_types.include?(craft_type)
+        end
+      end
+
       belongs_to :field_group, foreign_key: 'groupId'
 
       before_create do
-        self.handle = Slug.new(name) unless handle.present?
+        self.handle = Handle.new(name) unless handle.present?
         self.field_group = FieldGroup.first unless field_group.present?
       end
 
       after_create do
-        Content.add_field_column(handle)
+        self.class.verify_column_type(type)
+        Content.add_field_column(handle, self.class.column_type_for(type))
+      end
+
+      after_destroy do
+        Content.remove_field_column(handle)
       end
     end
 
@@ -237,7 +296,9 @@ module Greenhorn
         tabs.first || tabs.create!(name: 'Tab 1')
       end
 
-      def attach_field(field)
+      def attach_field(field_or_handle)
+        field = field_or_handle.is_a?(Field) ? field_or_handle : Field.find_by(handle: field_or_handle)
+        raise "Couldn't find field with handle `#{field_or_handle}`" unless field.present?
         attached_fields.create!(field: field, tab: default_tab)
       end
     end
@@ -287,6 +348,14 @@ module Greenhorn
     end
 
     class CraftCollection
+      delegate :create,
+        :where,
+        to: :model
+
+      def model
+        raise NotImplementedError
+      end
+
       def transaction(&block)
         ActiveRecord::Base.transaction(&block)
       end
@@ -298,13 +367,47 @@ module Greenhorn
       def destroy_all
         model.destroy_all
       end
+
+      def from_boolean(bool)
+        bool ? 1 : 0
+      end
     end
 
     class FieldCollection < CraftCollection
-      def find_or_create_by(attrs)
+      def model
+        Field
+      end
+
+      def cleaned_attrs(attrs)
+        type = attrs[:type] || :plain_text
+        Field.verify_field_type!(type)
+
+        settings_hash = case type
+                          when :rich_text
+                            {
+                              configFig: attrs[:config_file] || '',
+                              availableAssetSources: attrs[:available_asset_sources] || '*',
+                              availableTransforms: attrs[:available_transforms] || '*',
+                              cleanupHtml: attrs[:cleanup_html] || '1',
+                              purifyHtml: attrs[:purify_html] || '1',
+                              columnType: 'text'
+                            }
+                        end
+        {
+          name: attrs[:name],
+          type: Field.craft_type_for(type),
+          settings: settings_hash
+        }
+      end
+
+      def create(attrs)
         transaction do
-          Field.find_or_create_by(attrs)
+          field = Field.create!(cleaned_attrs(attrs))
         end
+      end
+
+      def find_or_create_by(attrs)
+        transaction { Field.find_or_create_by!(cleaned_attrs(attrs)) }
       end
     end
 
@@ -397,21 +500,60 @@ module Greenhorn
           self.field_layout = FieldLayout.create!(type: 'Commerce_Product')
           self.variant_field_layout = FieldLayout.create!(type: 'Commerce_Variant')
         end
+
+        def add_field(field)
+          field_layout.attach_field(field)
+        end
+
+        def verify_fields_attached!(field_handles)
+          field_handles = field_handles.map(&:to_s)
+          attached_field_handles = field_layout.attached_fields.map(&:field).map(&:handle)
+          field_handles.each do |field_handle|
+            raise "Field `#{field_handle}` not attached to this product type" unless attached_field_handles.include?(field_handle)
+          end
+        end
       end
 
       class TaxCategory < Model
-        def self.table
-          'commerce_taxcategories'
+        class << self
+          def table
+            'commerce_taxcategories'
+          end
+
+          def default
+            find_by(default: 1)
+          end
         end
       end
 
       class ProductTypeCollection < CraftCollection
+        def model
+          ProductType
+        end
+
+        def cleaned_attrs(attrs)
+          {
+            name: attrs[:name],
+            hasVariants: from_boolean(attrs[:has_variants] || false),
+          }
+        end
+
         def find_or_create_by(attrs)
-          transaction { ProductType.find_or_create_by!(attrs) }
+          transaction { ProductType.find_or_create_by!(cleaned_attrs(attrs)) }
         end
 
         def create(attrs)
-          transaction { ProductType.create!(attrs) }
+          transaction do
+            product_type = ProductType.create!(cleaned_attrs(attrs))
+
+            if attrs[:fields].present?
+              attrs[:fields].each do |field|
+                product_type.add_field(field)
+              end
+            end
+
+            product_type
+          end
         end
       end
 
@@ -424,11 +566,13 @@ module Greenhorn
           raise "Can't create a product without a type" if attrs[:type].nil?
 
           transaction do
-            non_field_attrs = %i(title type defaultPrice)
+            non_field_attrs = %i(title type default_sku default_price)
             field_attrs = attrs
               .reject { |key, value| non_field_attrs.include?(key) }
-              .map { |key, value| ["field_#{key}", value] }
+              .map { |key, value| [key.to_s.camelize(:lower), value] }
               .to_h
+            attrs[:type].verify_fields_attached!(field_attrs.keys)
+            field_attrs = field_attrs.map { |key, value| ["field_#{key}", value] }.to_h
             content_attrs = field_attrs.merge(title: attrs[:title])
 
             element = Element.create!(
@@ -446,8 +590,9 @@ module Greenhorn
             Product.create!(
               id: element.id,
               type: attrs[:type],
-              defaultPrice: attrs[:defaultPrice],
-              tax_category: TaxCategory.first
+              defaultSku: attrs[:default_sku],
+              defaultPrice: attrs[:default_price],
+              tax_category: TaxCategory.default
             )
           end
         end
