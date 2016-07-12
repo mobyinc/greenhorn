@@ -392,7 +392,27 @@ module Greenhorn
           path_style: true
         )
         dir = connection.directories.get(asset_source.settings['bucket'])
-        file = dir.files.create(key: "#{asset_source.settings['subfolder']}/#{filename}", body: HTTParty.get(@file), public: true)
+        expires = asset_source.settings['expires']
+        amount = expires.match(/\d+/)[0].to_i
+        cache_seconds =
+          if expires.include?('second')
+            amount
+          elsif expires.include?('minute')
+            amount.send(:minutes).to_i
+          elsif expires.include?('hour')
+            amount.send(:hours).to_i
+          elsif expires.include?('day')
+            amount.send(:days).to_i
+          elsif expires.include?('year')
+            amount.send(:years).to_i
+          end
+        cache_headers = expires.present? ? { 'Cache-Control' => "max-age=#{cache_seconds}" } : {}
+        file = dir.files.create(
+          key: "#{asset_source.settings['subfolder']}/#{filename}",
+          body: HTTParty.get(@file),
+          public: true,
+          metadata: cache_headers
+        )
         update(size: file.content_length)
       end
 
@@ -414,6 +434,18 @@ module Greenhorn
         def table
           'assetsources'
         end
+
+        def default_settings_for(type)
+          case type
+          when 'S3'
+            {
+              subfolder: '',
+              publicUrls: '0',
+              urlPrefix: '',
+              expires: ''
+            }
+          end
+        end
       end
 
       SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location)
@@ -434,7 +466,8 @@ module Greenhorn
       end
 
       def initialize(attrs)
-        attrs[:settings] = attrs.slice(*SETTINGS_ATTRS)
+        default_settings = self.class.default_settings_for(attrs[:type])
+        attrs[:settings] = default_settings.merge(attrs.slice(*SETTINGS_ATTRS))
         SETTINGS_ATTRS.each { |key| attrs.delete(key) }
         super(attrs)
       end
