@@ -30,6 +30,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "mysql2", "~> 0.4"
   spec.add_dependency "activerecord", "~> 5.0"
   spec.add_dependency "dimensions", "~> 1.3"
+  spec.add_dependency "fog-aws", "~> 0.9"
+  spec.add_dependency "httparty", "~> 0.13"
+  spec.add_dependency "fastimage", "~> 2.0"
 
   spec.add_development_dependency "bundler", "~> 1.12"
   spec.add_development_dependency "rake", "~> 10.0"

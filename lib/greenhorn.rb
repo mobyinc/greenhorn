@@ -1,7 +1,10 @@
 require 'greenhorn/version'
+require 'httparty'
 require 'active_record'
 require 'byebug'
 require 'uri'
+require 'fog/aws'
+require 'fastimage'
 
 module Greenhorn
   class Craft
@@ -109,13 +112,13 @@ module Greenhorn
       has_one :content, foreign_key: 'elementId'
       has_one :structure_element, foreign_key: 'elementId'
       has_one :entry, foreign_key: 'id'
-      has_one :element_locale, foreign_key: 'elementId'
+      has_many :element_locales, foreign_key: 'elementId'
     end
 
     class Entry < Model
       belongs_to :section, foreign_key: 'sectionId'
       belongs_to :element, foreign_key: 'id'
-      has_one :element_locale, through: :element
+      has_many :element_locale, through: :element
     end
 
     class EntryType < Model
@@ -209,7 +212,11 @@ module Greenhorn
       belongs_to :structure, foreign_key: 'structureId'
     end
 
-    class Relation < Model; end
+    class Relation < Model
+      belongs_to :field, foreign_key: 'fieldId'
+      belongs_to :source, class_name: 'Element', foreign_key: 'sourceId'
+      belongs_to :target, class_name: 'Element', foreign_key: 'targetId'
+    end
 
     class Field < Model
       class << self
@@ -218,6 +225,7 @@ module Greenhorn
             PlainText
             RichText
             Number
+            Assets
           )
         end
 
@@ -236,13 +244,31 @@ module Greenhorn
         def column_type_for(type)
           column_type_mapping[type]
         end
+      end
 
-        def verify_column_type(craft_type)
-          allowed_types = column_type_mapping.keys
-          raise "Don't know what column type should be for `#{craft_type}`" unless allowed_types.include?(craft_type)
+      def default_settings_for(type)
+        case type
+        when 'PlainText'
+          { placeholder: '', maxLength: '', multiline: '', initialRows: '4' }
+        when 'RichText'
+          { configFig: '', availableAssetSources: '*', availableTransforms: '*', cleanupHtml: '1', purifyHtml: '1', columnType: 'text' }
+        when 'Number'
+          { min: '0', max: '', decimals: '0' }
+        when 'Assets'
+          {
+            useSingleFolder: '1', sources: '*', defaultUploadLocationSource: '', defaultUploadLocationSubpath: '',
+            singleUploadLocationSource: '',
+            singleUploadLocationSubpath: '',
+            restrictFiles: '0',
+            allowedKinds: [],
+            limit: '',
+            viewMode: 'list',
+            selectionLabel: ''
+          }
         end
       end
 
+      serialize :settings, JSON
       belongs_to :field_group, foreign_key: 'groupId'
 
       before_create do
@@ -251,12 +277,40 @@ module Greenhorn
       end
 
       after_create do
-        self.class.verify_column_type(type)
-        Content.add_field_column(handle, self.class.column_type_for(type))
+        column_type = self.class.column_type_for(type)
+        if column_type.present?
+          Content.add_field_column(handle, column_type)
+        end
       end
 
       after_destroy do
-        Content.remove_field_column(handle)
+        column_type = self.class.column_type_for(type)
+        if column_type.present?
+          Content.remove_field_column(handle)
+        end
+      end
+
+      def initialize(attrs)
+        type = attrs[:type] || 'PlainText'
+        default_settings = default_settings_for(type)
+        settings = default_settings.merge(attrs.slice(*default_settings.keys))
+
+        default_upload_location_source = settings[:defaultUploadLocationSource]
+        if default_upload_location_source.present? && !default_upload_location_source.is_a?(String)
+          settings[:defaultUploadLocationSource] = default_upload_location_source.id.to_s
+        end
+        single_upload_location_source = settings[:singleUploadLocationSource]
+        if single_upload_location_source.present? && !single_upload_location_source.is_a?(String)
+          settings[:singleUploadLocationSource] = single_upload_location_source.id.to_s
+        end
+
+        self.class.verify_field_type!(type)
+        attrs = {
+          name: attrs[:name],
+          type: type,
+          settings: default_settings.merge(settings)
+        }
+        super(attrs)
       end
     end
 
@@ -324,10 +378,34 @@ module Greenhorn
 
     class AssetFile < Model
       self.table_name = 'assetfiles'
+      belongs_to :element, foreign_key: 'id'
       belongs_to :asset_folder, foreign_key: 'folderId'
+      belongs_to :asset_source, foreign_key: 'sourceId'
 
-      before_save do
-        self.dateModified = Time.now.utc
+      before_save { self.dateModified = Time.now.utc }
+      after_create do
+        connection = Fog::Storage.new(
+          provider: 'AWS',
+          aws_access_key_id: asset_source.settings['keyId'],
+          aws_secret_access_key: asset_source.settings['secret'],
+          region: asset_source.settings['location'],
+          path_style: true
+        )
+        dir = connection.directories.get(asset_source.settings['bucket'])
+        file = dir.files.create(key: "#{asset_source.settings['subfolder']}/#{filename}", body: HTTParty.get(@file), public: true)
+        update(size: file.content_length)
+      end
+
+      def initialize(attrs)
+        asset_source = attrs[:asset_source]
+        @file = attrs[:file]
+        attrs[:element] = Element.create!(type: 'Asset')
+        attrs[:filename] ||= @file.split('/').last
+        attrs[:element].element_locales.create!(slug: attrs[:filename], locale: 'en_us')
+        attrs[:width], attrs[:height] = FastImage.size(@file)
+        Content.create!(element: attrs[:element], title: attrs[:filename])
+        attrs.delete(:file)
+        super(attrs)
       end
     end
 
@@ -390,7 +468,7 @@ module Greenhorn
     end
 
     def fields
-      @fields ||= FieldCollection.new
+      Field
     end
 
     def entries
@@ -425,44 +503,6 @@ module Greenhorn
 
       def from_boolean(bool)
         bool ? 1 : 0
-      end
-    end
-
-    class FieldCollection < CraftCollection
-      def model
-        Field
-      end
-
-      def cleaned_attrs(attrs)
-        type = attrs[:type] || 'PlainText'
-        Field.verify_field_type!(type)
-
-        settings_hash = case type
-                          when :rich_text
-                            {
-                              configFig: attrs[:config_file] || '',
-                              availableAssetSources: attrs[:available_asset_sources] || '*',
-                              availableTransforms: attrs[:available_transforms] || '*',
-                              cleanupHtml: attrs[:cleanup_html] || '1',
-                              purifyHtml: attrs[:purify_html] || '1',
-                              columnType: 'text'
-                            }
-                        end
-        {
-          name: attrs[:name],
-          type: type,
-          settings: settings_hash
-        }
-      end
-
-      def create(attrs)
-        transaction do
-          field = Field.create!(cleaned_attrs(attrs))
-        end
-      end
-
-      def find_or_create_by(attrs)
-        transaction { Field.find_or_create_by!(cleaned_attrs(attrs)) }
       end
     end
 
@@ -664,13 +704,26 @@ module Greenhorn
             non_field_attrs = %i(title type defaultSku defaultPrice)
             field_attrs = attrs.reject { |key, value| non_field_attrs.include?(key) }
             attrs[:type].verify_fields_attached!(field_attrs.keys)
-            field_attrs = field_attrs.map { |key, value| ["field_#{key}", value] }.to_h
+
+            asset_fields, regular_fields = field_attrs.partition do |field_handle|
+              field = Field.find_by(handle: field_handle)
+              field.type == 'Assets'
+            end.map(&:to_h)
+
+            field_attrs = regular_fields.map { |key, value| ["field_#{key}", value] }.to_h
             content_attrs = field_attrs.merge(title: attrs[:title])
 
             element = Element.create!(
               type: 'Commerce_Product',
               content: Content.new(content_attrs)
             )
+
+            asset_fields.each do |handle, value|
+              field = Field.find_by(handle: handle)
+              asset_source = AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
+              asset_file = AssetFile.create!(file: value, kind: 'image', asset_source: asset_source, asset_folder: asset_source.asset_folder)
+              Relation.create!(field: field, source: element, target: asset_file.element)
+            end
 
             slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
             ElementLocale.create!(
