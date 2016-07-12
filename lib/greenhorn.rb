@@ -378,6 +378,7 @@ module Greenhorn
 
     class AssetFile < Model
       self.table_name = 'assetfiles'
+
       belongs_to :element, foreign_key: 'id'
       belongs_to :asset_folder, foreign_key: 'folderId'
       belongs_to :asset_source, foreign_key: 'sourceId'
@@ -421,6 +422,13 @@ module Greenhorn
         @file = attrs[:file]
         attrs[:element] = Element.create!(type: 'Asset')
         attrs[:filename] ||= @file.split('/').last
+
+        if AssetFile.find_by(filename: attrs[:filename], asset_folder: attrs[:asset_folder]).present?
+          filename = attrs[:filename]
+          name, extension = filename.split('.')
+          attrs[:filename] = "#{name}-#{SecureRandom.hex(2)}.#{extension}"
+        end
+
         attrs[:element].element_locales.create!(slug: attrs[:filename], locale: 'en_us')
         attrs[:width], attrs[:height] = FastImage.size(@file)
         Content.create!(element: attrs[:element], title: attrs[:filename])
@@ -738,7 +746,7 @@ module Greenhorn
             field_attrs = attrs.reject { |key, value| non_field_attrs.include?(key) }
             attrs[:type].verify_fields_attached!(field_attrs.keys)
 
-            asset_fields, regular_fields = field_attrs.partition do |field_handle|
+            asset_fields, regular_fields = field_attrs.partition do |field_handle, value|
               field = Field.find_by(handle: field_handle)
               field.type == 'Assets'
             end.map(&:to_h)
@@ -754,8 +762,12 @@ module Greenhorn
             asset_fields.each do |handle, value|
               field = Field.find_by(handle: handle)
               asset_source = AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
-              asset_file = AssetFile.create!(file: value, kind: 'image', asset_source: asset_source, asset_folder: asset_source.asset_folder)
-              Relation.create!(field: field, source: element, target: asset_file.element)
+
+              value = [value] unless value.is_a?(Array)
+              value.each do |file|
+                asset_file = AssetFile.create!(file: file, kind: 'image', asset_source: asset_source, asset_folder: asset_source.asset_folder)
+                Relation.create!(field: field, source: element, target: asset_file.element)
+              end
             end
 
             slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
