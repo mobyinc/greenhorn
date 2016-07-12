@@ -12,8 +12,14 @@ module Greenhorn
       Model.descendants.each do |model_class|
         # Not using `Model.table_name_prefix=` b/c AR will 
         # ignore the prefix when using the custom name
+        next if model_class.abstract_class
         prefix = options[:prefix].present? ? "#{options[:prefix]}_" : ''
         model_class.table_name = "#{prefix}#{model_class.table}"
+      end
+
+      CoreModel.descendants.each do |model_class|
+        method_name = model_class.to_s.split('::').last.underscore.pluralize
+        define_singleton_method(method_name) { model_class }
       end
 
       @connection = ActiveRecord::Base.establish_connection(
@@ -79,6 +85,10 @@ module Greenhorn
         end
       end
 
+      def from_boolean(bool)
+        bool ? 1 : 0
+      end
+
       def craft_table_name
         table_name
       end
@@ -97,17 +107,22 @@ module Greenhorn
       end
     end
 
-    class CategoryGroup < Model
+    class CoreModel < Model
+      self.inheritance_column = :_type_disabled
+      self.abstract_class = true
+    end
+
+    class CategoryGroup < CoreModel
       self.table_name = 'categorygroups'
       has_many :categories, foreign_key: 'groupId'
     end
 
-    class Category < Model
+    class Category < CoreModel
       belongs_to :category_group, foreign_key: 'groupId'
       belongs_to :element, foreign_key: 'id'
     end
 
-    class Element < Model
+    class Element < CoreModel
       delegate :slug, to: :element_locale, allow_nil: true
       has_one :content, foreign_key: 'elementId'
       has_one :structure_element, foreign_key: 'elementId'
@@ -115,13 +130,59 @@ module Greenhorn
       has_many :element_locales, foreign_key: 'elementId'
     end
 
-    class Entry < Model
+    class Entry < CoreModel
       belongs_to :section, foreign_key: 'sectionId'
       belongs_to :element, foreign_key: 'id'
       has_many :element_locale, through: :element
+
+      validates :section, presence: true
+
+      before_create do
+      end
+
+      def initialize(attrs)
+        section = attrs[:section]
+        content = attrs[:content]
+
+        non_field_attrs = %i(section title)
+        field_attrs = attrs
+          .reject { |key, value| non_field_attrs.include?(key) }
+          .map { |key, value| ["field_#{key}", value] }
+          .to_h
+        @content_attrs = field_attrs.merge(title: attrs[:title])
+
+        structure = section.structure
+        max_right = StructureElement.where(structure: structure, level: 1).maximum(:rgt)
+        left = max_right.present? ? max_right + 1 : 0
+        right = left + 1
+
+        element = Element.create!(
+          type: 'Entry',
+          content: Content.new(@content_attrs),
+          structure_element: StructureElement.create(
+            root: 1,
+            lft: left,
+            rgt: right,
+            level: 1,
+            structureId: structure.id
+          )
+        )
+
+        slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
+        ElementLocale.create!(element: element, slug: slug, locale: 'en_us')
+
+        super(
+          section: section,
+          element: element,
+          id: element.id,
+          authorId: 1,
+          typeId: section.entry_type.id,
+          postDate: Time.current
+        )
+      end
     end
 
-    class EntryType < Model
+    class EntryType < CoreModel
       belongs_to :section, foreign_key: 'sectionId'
       belongs_to :field_layout, foreign_key: 'fieldLayoutId'
 
@@ -134,7 +195,7 @@ module Greenhorn
       end
     end
 
-    class Section < Model
+    class Section < CoreModel
       has_many :entries, foreign_key: 'sectionId'
       has_one :section_locale, foreign_key: 'id'
       has_one :entry_type, foreign_key: 'sectionId'
@@ -147,6 +208,14 @@ module Greenhorn
 
       after_create do
         EntryType.create!(section: self, handle: handle, name: name)
+        if @fields.present?
+          @fields.each { |field| section.add_field(field) }
+        end
+      end
+
+      def initialize(attrs)
+        @fields = attrs[:fields]
+        super(attrs.delete(:fields))
       end
 
       def add_field(field)
@@ -154,12 +223,12 @@ module Greenhorn
       end
     end
 
-    class SectionLocale < Model
+    class SectionLocale < CoreModel
       self.table_name = 'sections_i18n'
       belongs_to :section, foreign_key: 'sectionId'
     end
 
-    class Content < Model
+    class Content < CoreModel
       class << self
         def table
           'content'
@@ -190,7 +259,7 @@ module Greenhorn
       end
     end
 
-    class ElementLocale < Model
+    class ElementLocale < CoreModel
       self.table_name = 'elements_i18n'
       belongs_to :element, foreign_key: 'elementId'
       before_save do
@@ -201,9 +270,9 @@ module Greenhorn
       end
     end
 
-    class Structure < Model; end
+    class Structure < CoreModel; end
 
-    class StructureElement < Model
+    class StructureElement < CoreModel
       def self.table
         'structureelements'
       end
@@ -212,13 +281,13 @@ module Greenhorn
       belongs_to :structure, foreign_key: 'structureId'
     end
 
-    class Relation < Model
+    class Relation < CoreModel
       belongs_to :field, foreign_key: 'fieldId'
       belongs_to :source, class_name: 'Element', foreign_key: 'sourceId'
       belongs_to :target, class_name: 'Element', foreign_key: 'targetId'
     end
 
-    class Field < Model
+    class Field < CoreModel
       class << self
         def allowed_types
           %w(
@@ -320,7 +389,7 @@ module Greenhorn
       end
     end
 
-    class FieldGroup < Model
+    class FieldGroup < CoreModel
       has_many :fields, foreign_key: 'groupId'
 
       def self.table
@@ -328,7 +397,7 @@ module Greenhorn
       end
     end
 
-    class FieldLayoutField < Model
+    class FieldLayoutField < CoreModel
       belongs_to :field_layout, foreign_key: 'layoutId'
       belongs_to :tab, class_name: 'FieldLayoutTab', foreign_key: 'tabId'
       belongs_to :field, foreign_key: 'fieldId'
@@ -338,7 +407,7 @@ module Greenhorn
       end
     end
 
-    class FieldLayoutTab < Model
+    class FieldLayoutTab < CoreModel
       belongs_to :field_layout, foreign_key: 'layoutId'
 
       def self.table
@@ -346,7 +415,7 @@ module Greenhorn
       end
     end
 
-    class FieldLayout < Model
+    class FieldLayout < CoreModel
       has_one :entry_type, foreign_key: 'fieldLayoutId'
       has_many :attached_fields, class_name: 'FieldLayoutField', foreign_key: 'layoutId'
       has_many :tabs, class_name: 'FieldLayoutTab', foreign_key: 'layoutId'
@@ -366,7 +435,7 @@ module Greenhorn
       end
     end
 
-    class AssetFolder < Model
+    class AssetFolder < CoreModel
       def self.table
         'assetfolders'
       end
@@ -376,7 +445,7 @@ module Greenhorn
       delegate :path, to: :asset_source
     end
 
-    class AssetFile < Model
+    class AssetFile < CoreModel
       self.table_name = 'assetfiles'
 
       belongs_to :element, foreign_key: 'id'
@@ -437,7 +506,7 @@ module Greenhorn
       end
     end
 
-    class AssetSource < Model
+    class AssetSource < CoreModel
       class << self
         def table
           'assetsources'
@@ -508,110 +577,20 @@ module Greenhorn
       end
     end
 
-    def fields
-      Field
-    end
-
-    def entries
-      @entries ||= EntryCollection.new
-    end
-
-    def sections
-      @sections || SectionCollection.new
-    end
-
-    def asset_sources
-      AssetSource
-    end
-
-    class CraftCollection
-      delegate :create,
-        :where,
-        :destroy_all,
-        to: :model
-
-      def model
-        raise NotImplementedError
-      end
-
-      def transaction(&block)
-        ActiveRecord::Base.transaction(&block)
-      end
-
-      def now
-        Time.current
-      end
-
-      def from_boolean(bool)
-        bool ? 1 : 0
-      end
-    end
-
-    class SectionCollection < CraftCollection
-      def find_or_create_by(attrs)
-        transaction do
-          section = Section.find_or_create_by(attrs)
-
-          if attrs[:fields].present?
-            attrs[:fields].each { |field| section.add_field(field) }
-          end
-
-          section
-        end
-      end
-    end
-
-    class EntryCollection < CraftCollection
-      def create(attrs)
-        raise "Can't create an entry without a section" unless attrs[:section].present?
-
-        transaction do
-          section = attrs[:section]
-          structure = section.structure
-          content = attrs[:content]
-
-          max_right = StructureElement.where(structure: structure, level: 1).maximum(:rgt)
-          left = max_right.present? ? max_right + 1 : 0
-          right = left + 1
-
-          non_field_attrs = %i(section title)
-          field_attrs = attrs
-            .reject { |key, value| non_field_attrs.include?(key) }
-            .map { |key, value| ["field_#{key}", value] }
-            .to_h
-          content_attrs = field_attrs.merge(title: attrs[:title])
-
-          element = Element.create!(
-            type: 'Entry',
-            content: Content.new(content_attrs),
-            structure_element: StructureElement.create(
-              root: 1,
-              lft: left,
-              rgt: right,
-              level: 1,
-              structureId: structure.id
-            )
-          )
-
-          slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
-          ElementLocale.create!(
-            element: element,
-            slug: slug,
-            locale: 'en_us'
-          )
-
-          section.entries.create!(
-            id: element.id,
-            authorId: 1,
-            typeId: section.entry_type.id,
-            postDate: now,
-          )
-        end
-      end
-    end
-
     class Commerce
-      class Product < Model
+      def initialize
+        CommerceModel.descendants.each do |model_class|
+          method_name = model_class.to_s.split('::').last.underscore.pluralize
+          define_singleton_method(method_name) { model_class }
+        end
+      end
+
+      class CommerceModel < Model
+        self.inheritance_column = :_type_disabled
+        self.abstract_class = true
+      end
+
+      class Product < CommerceModel
         def self.table
           'commerce_products'
         end
@@ -622,9 +601,67 @@ module Greenhorn
         belongs_to :default_variant, class_name: 'Variant', foreign_key: 'defaultVariantId'
         has_one :element_locale, through: :element
         has_many :variants, foreign_key: 'productId', dependent: :destroy
+        accepts_nested_attributes_for :default_variant
+
+        validates :type, presence: true
+
+        def initialize(attrs)
+          non_field_attrs = %i(title type tax_category).concat(self.class.column_names.map(&:to_sym))
+          field_attrs = attrs.reject { |key, value| non_field_attrs.include?(key) }
+          attrs[:type].verify_fields_attached!(field_attrs.keys)
+
+          asset_fields, regular_fields = field_attrs.partition do |field_handle, value|
+            field = Field.find_by(handle: field_handle)
+            field.type == 'Assets'
+          end.map(&:to_h)
+
+          field_attrs.each { |key, value| attrs.delete(key) }
+          field_attrs = regular_fields.map { |key, value| ["field_#{key}", value] }.to_h
+          content_attrs = field_attrs.merge(title: attrs[:title])
+
+          element = Element.create!(
+            type: 'Commerce_Product',
+            content: Content.new(content_attrs)
+          )
+
+          asset_fields.each do |handle, value|
+            field = Field.find_by(handle: handle)
+            asset_source = AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
+
+            value = [value] unless value.is_a?(Array)
+            value.each do |file|
+              asset_file = AssetFile.create!(file: file, kind: 'image', asset_source: asset_source, asset_folder: asset_source.asset_folder)
+              Relation.create!(field: field, source: element, target: asset_file.element)
+            end
+          end
+
+          slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
+          ElementLocale.create!(
+            element: element,
+            slug: slug,
+            locale: 'en_us'
+          )
+
+          default_variant_params = attrs[:default_variant_params] || {}
+          default_variant_params[:isDefault] = true
+          default_variant_params[:title] ||= attrs[:title]
+          default_variant_params[:sku] ||= attrs[:defaultSku]
+          default_variant_params[:price] ||= attrs[:defaultPrice]
+          default_variant_params[:stock] ||= 0
+          unlimited_stock = default_variant_params[:unlimitedStock] || true
+          default_variant_params[:unlimitedStock] = from_boolean(unlimited_stock)
+          default_variant_params[:product] = self
+
+          attrs[:default_variant_attributes] = default_variant_params
+          attrs[:tax_category] ||= TaxCategory.default
+          attrs[:id] = element.id
+          attrs.delete(:title)
+
+          super(attrs)
+        end
       end
 
-      class ProductType < Model
+      class ProductType < CommerceModel
         def self.table
           'commerce_producttypes'
         end
@@ -639,6 +676,14 @@ module Greenhorn
           self.variant_field_layout = FieldLayout.create!(type: 'Commerce_Variant')
         end
 
+        after_create do
+          if @fields.present?
+            @fields.each do |field|
+              add_field(field)
+            end
+          end
+        end
+
         def add_field(field)
           field_layout.attach_field(field)
         end
@@ -650,9 +695,16 @@ module Greenhorn
             raise "Field `#{field_handle}` not attached to this product type" unless attached_field_handles.include?(field_handle)
           end
         end
+
+        def initialize(attrs)
+          attrs[:hasVariants] = from_boolean(attrs[:hasVariants] || false)
+          @fields = attrs[:fields]
+          attrs.delete(:fields)
+          super(attrs)
+        end
       end
 
-      class TaxCategory < Model
+      class TaxCategory < CommerceModel
         class << self
           def table
             'commerce_taxcategories'
@@ -664,15 +716,15 @@ module Greenhorn
         end
       end
 
-      class Variant < Model
+      class Variant < CommerceModel
         def self.table
           'commerce_variants'
         end
 
         belongs_to :product, foreign_key: 'productId'
 
-        def self.create_from_attrs(attrs)
-          non_field_attrs = %i(title product).concat(column_names.map(&:to_sym))
+        def initialize(attrs)
+          non_field_attrs = %w(title product).concat(self.class.column_names)
           field_attrs = attrs
             .reject { |key, value| non_field_attrs.include?(key) }
             .map { |key, value| ["field_#{key}", value] }.to_h
@@ -690,9 +742,9 @@ module Greenhorn
             locale: 'en_us'
           )
 
-          Variant.create!(
+          super(
             id: element.id,
-            isDefault: from_boolean(attrs[:default]),
+            isDefault: from_boolean(attrs[:isDefault]),
             price: attrs[:price],
             sku: attrs[:sku],
             stock: attrs[:stock],
@@ -700,127 +752,6 @@ module Greenhorn
             product: attrs[:product]
           )
         end
-      end
-
-      class ProductTypeCollection < CraftCollection
-        def model
-          ProductType
-        end
-
-        def cleaned_attrs(attrs)
-          {
-            name: attrs[:name],
-            hasVariants: from_boolean(attrs[:has_variants] || false),
-          }
-        end
-
-        def find_or_create_by(attrs)
-          transaction { ProductType.find_or_create_by!(cleaned_attrs(attrs)) }
-        end
-
-        def create(attrs)
-          transaction do
-            product_type = ProductType.create!(cleaned_attrs(attrs))
-
-            if attrs[:fields].present?
-              attrs[:fields].each do |field|
-                product_type.add_field(field)
-              end
-            end
-
-            product_type
-          end
-        end
-      end
-
-      class ProductCollection < CraftCollection
-        def model
-          Product
-        end
-
-        def create(attrs)
-          raise "Can't create a product without a type" if attrs[:type].nil?
-
-          transaction do
-            non_field_attrs = %i(title type defaultSku defaultPrice)
-            field_attrs = attrs.reject { |key, value| non_field_attrs.include?(key) }
-            attrs[:type].verify_fields_attached!(field_attrs.keys)
-
-            asset_fields, regular_fields = field_attrs.partition do |field_handle, value|
-              field = Field.find_by(handle: field_handle)
-              field.type == 'Assets'
-            end.map(&:to_h)
-
-            field_attrs = regular_fields.map { |key, value| ["field_#{key}", value] }.to_h
-            content_attrs = field_attrs.merge(title: attrs[:title])
-
-            element = Element.create!(
-              type: 'Commerce_Product',
-              content: Content.new(content_attrs)
-            )
-
-            asset_fields.each do |handle, value|
-              field = Field.find_by(handle: handle)
-              asset_source = AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
-
-              value = [value] unless value.is_a?(Array)
-              value.each do |file|
-                asset_file = AssetFile.create!(file: file, kind: 'image', asset_source: asset_source, asset_folder: asset_source.asset_folder)
-                Relation.create!(field: field, source: element, target: asset_file.element)
-              end
-            end
-
-            slug = attrs[:slug].present? ? attrs[:slug] : Slug.new(attrs[:title])
-            ElementLocale.create!(
-              element: element,
-              slug: slug,
-              locale: 'en_us'
-            )
-
-            product = Product.create!(
-              id: element.id,
-              type: attrs[:type],
-              defaultSku: attrs[:defaultSku],
-              defaultPrice: attrs[:defaultPrice],
-              tax_category: TaxCategory.default,
-            )
-
-            default_variant_params = attrs[:default_variant_params] || {}
-            default_variant_params[:isDefault] = true
-            default_variant_params[:title] ||= attrs[:title]
-            default_variant_params[:sku] ||= attrs[:defaultSku]
-            default_variant_params[:price] ||= attrs[:defaultPrice]
-            default_variant_params[:stock] ||= 0
-            unlimited_stock = default_variant_params[:unlimitedStock] || true
-            default_variant_params[:unlimitedStock] = from_boolean(unlimited_stock)
-            default_variant_params[:product] = product
-
-            product.default_variant = Variant.create_from_attrs(default_variant_params)
-            product
-          end
-        end
-      end
-
-      class VariantCollection < CraftCollection
-        def model
-          Variant
-        end
-
-        def create(attrs)
-          transaction { Variant.create_from_attrs(attrs) }
-        end
-      end
-
-      def products
-        @products ||= ProductCollection.new
-      end
-
-      def product_types
-        @product_types ||= ProductTypeCollection.new
-      end
-
-      def variants
-        @variants ||= VariantCollection.new
       end
     end
   end
