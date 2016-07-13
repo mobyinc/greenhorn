@@ -28,9 +28,7 @@ module Greenhorn
       self.uid = Utility::UID.new
       self.dateCreated = Time.now.utc
 
-      if respond_to?(:postDate)
-        self.postDate = Time.now.utc
-      end
+      self.postDate = Time.now.utc if respond_to?(:postDate)
     end
 
     before_save do

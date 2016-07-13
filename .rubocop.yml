@@ -1,0 +1,15 @@
+AllCops:
+  Exclude:
+    - 'bin/**/*'
+    - 'db/**/*'
+Metrics/LineLength:
+  Max: 120
+  Severity: refactor
+Metrics/AbcSize:
+  Max: 300
+Metrics/MethodLength:
+  Max: 50
+Style/Documentation:
+  Enabled: false
+Style/RescueModifier:
+  Enabled: false

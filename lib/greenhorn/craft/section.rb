@@ -15,9 +15,7 @@ module Greenhorn
 
       after_create do
         EntryType.create!(section: self, handle: handle, name: name)
-        if @fields.present?
-          @fields.each { |field| section.add_field(field) }
-        end
+        @fields.each { |field| section.add_field(field) } if @fields.present?
       end
 
       def initialize(attrs)

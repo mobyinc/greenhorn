@@ -12,8 +12,8 @@ module Greenhorn
       def initialize(attrs)
         non_field_attrs = %w(title product).concat(self.class.column_names)
         field_attrs = attrs
-          .reject { |key, value| non_field_attrs.include?(key) }
-          .map { |key, value| ["field_#{key}", value] }.to_h
+                      .reject { |key, _value| non_field_attrs.include?(key) }
+                      .map { |key, value| ["field_#{key}", value] }.to_h
         content_attrs = field_attrs.merge(title: attrs[:title])
 
         element = Greenhorn::Craft::Element.create!(

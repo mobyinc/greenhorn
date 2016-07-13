@@ -14,7 +14,9 @@ module Greenhorn
         end
 
         def verify_field_type!(type)
-          raise "Unknown field type `#{type}`. Must be one of #{allowed_types.map(&:to_sym)}" unless allowed_types.include?(type)
+          unless allowed_types.include?(type)
+            raise "Unknown field type `#{type}`. Must be one of #{allowed_types.map(&:to_sym)}"
+          end
         end
 
         def column_type_mapping
@@ -35,12 +37,22 @@ module Greenhorn
         when 'PlainText'
           { placeholder: '', maxLength: '', multiline: '', initialRows: '4' }
         when 'RichText'
-          { configFig: '', availableAssetSources: '*', availableTransforms: '*', cleanupHtml: '1', purifyHtml: '1', columnType: 'text' }
+          {
+            configFig: '',
+            availableAssetSources: '*',
+            availableTransforms: '*',
+            cleanupHtml: '1',
+            purifyHtml: '1',
+            columnType: 'text'
+          }
         when 'Number'
           { min: '0', max: '', decimals: '0' }
         when 'Assets'
           {
-            useSingleFolder: '1', sources: '*', defaultUploadLocationSource: '', defaultUploadLocationSubpath: '',
+            useSingleFolder: '1',
+            sources: '*',
+            defaultUploadLocationSource: '',
+            defaultUploadLocationSubpath: '',
             singleUploadLocationSource: '',
             singleUploadLocationSubpath: '',
             restrictFiles: '0',
@@ -62,16 +74,12 @@ module Greenhorn
 
       after_create do
         column_type = self.class.column_type_for(type)
-        if column_type.present?
-          Content.add_field_column(handle, column_type)
-        end
+        Content.add_field_column(handle, column_type) if column_type.present?
       end
 
       after_destroy do
         column_type = self.class.column_type_for(type)
-        if column_type.present?
-          Content.remove_field_column(handle)
-        end
+        Content.remove_field_column(handle) if column_type.present?
       end
 
       def initialize(attrs)

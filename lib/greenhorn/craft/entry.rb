@@ -9,18 +9,14 @@ module Greenhorn
 
       validates :section, presence: true
 
-      before_create do
-      end
-
       def initialize(attrs)
         section = attrs[:section]
-        content = attrs[:content]
 
         non_field_attrs = %i(section title)
         field_attrs = attrs
-          .reject { |key, value| non_field_attrs.include?(key) }
-          .map { |key, value| ["field_#{key}", value] }
-          .to_h
+                      .reject { |key, _value| non_field_attrs.include?(key) }
+                      .map { |key, value| ["field_#{key}", value] }
+                      .to_h
         @content_attrs = field_attrs.merge(title: attrs[:title])
 
         structure = section.structure

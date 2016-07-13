@@ -47,7 +47,6 @@ module Greenhorn
       end
 
       def initialize(attrs)
-        asset_source = attrs[:asset_source]
         @file = attrs[:file]
         attrs[:element] = Element.create!(type: 'Asset')
         attrs[:filename] ||= @file.split('/').last

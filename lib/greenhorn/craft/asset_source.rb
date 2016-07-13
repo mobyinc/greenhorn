@@ -21,7 +21,7 @@ module Greenhorn
         end
       end
 
-      SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location)
+      SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location).freeze
 
       belongs_to :field_layout, foreign_key: 'fieldLayoutId'
       has_one :asset_folder, foreign_key: 'sourceId'
@@ -46,6 +46,7 @@ module Greenhorn
       end
 
       def config
+        p settings
         JSON.parse(settings)
       end
 
@@ -69,7 +70,9 @@ module Greenhorn
       end
 
       def url_prefix_is_valid
-        errors.add(:base, "`urlPrefix` required if `publicUrls = true`") if settings['publicUrls'] && !settings['urlPrefix']
+        if settings['publicUrls'] && !settings['urlPrefix']
+          errors.add(:base, '`urlPrefix` required if `publicUrls = true`')
+        end
       end
     end
   end

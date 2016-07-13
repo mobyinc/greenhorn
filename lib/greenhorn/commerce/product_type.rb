@@ -33,7 +33,9 @@ module Greenhorn
         field_handles = field_handles.map(&:to_s)
         attached_field_handles = field_layout.attached_fields.map(&:field).map(&:handle)
         field_handles.each do |field_handle|
-          raise "Field `#{field_handle}` not attached to this product type" unless attached_field_handles.include?(field_handle)
+          unless attached_field_handles.include?(field_handle)
+            raise "Field `#{field_handle}` not attached to this product type"
+          end
         end
       end
 

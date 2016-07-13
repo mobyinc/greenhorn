@@ -19,15 +19,15 @@ module Greenhorn
 
       def initialize(attrs)
         non_field_attrs = %i(title type tax_category).concat(self.class.column_names.map(&:to_sym))
-        field_attrs = attrs.reject { |key, value| non_field_attrs.include?(key) }
+        field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
         attrs[:type].verify_fields_attached!(field_attrs.keys)
 
-        asset_fields, regular_fields = field_attrs.partition do |field_handle, value|
+        asset_fields, regular_fields = field_attrs.partition do |field_handle, _value|
           field = Greenhorn::Craft::Field.find_by(handle: field_handle)
           field.type == 'Assets'
         end.map(&:to_h)
 
-        field_attrs.each { |key, value| attrs.delete(key) }
+        field_attrs.each { |key, _value| attrs.delete(key) }
         field_attrs = regular_fields.map { |key, value| ["field_#{key}", value] }.to_h
         content_attrs = field_attrs.merge(title: attrs[:title])
 
@@ -42,17 +42,18 @@ module Greenhorn
 
           value = [value] unless value.is_a?(Array)
           value.each do |file|
-            asset_file = Greenhorn::Craft::AssetFile.create!(file: file, kind: 'image', asset_source: asset_source, asset_folder: asset_source.asset_folder)
+            asset_file = Greenhorn::Craft::AssetFile.create!(
+              file: file,
+              kind: 'image',
+              asset_source: asset_source,
+              asset_folder: asset_source.asset_folder
+            )
             Greenhorn::Craft::Relation.create!(field: field, source: element, target: asset_file.element)
           end
         end
 
         slug = attrs[:slug].present? ? attrs[:slug] : Utility::Slug.new(attrs[:title])
-        Greenhorn::Craft::ElementLocale.create!(
-          element: element,
-          slug: slug,
-          locale: 'en_us'
-        )
+        Greenhorn::Craft::ElementLocale.create!(element: element, slug: slug, locale: 'en_us')
 
         default_variant_params = attrs[:default_variant_params] || {}
         default_variant_params[:isDefault] = true

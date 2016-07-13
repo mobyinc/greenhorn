@@ -4,9 +4,9 @@ module Greenhorn
       def initialize(string, type = :hyphen)
         @slug = string.downcase.strip
         @slug = if type == :hyphen
-                  @slug.gsub(' ', '-').gsub(/[^\w-]/, '')
+                  @slug.tr(' ', '-').gsub(/[^\w-]/, '')
                 else
-                  @slug.gsub(' ', '_').gsub(/[^\w-]/, '')
+                  @slug.tr(' ', '_').gsub(/[^\w-]/, '')
                 end
         @slug = @slug.gsub(/[^\w-]/, '')
       end

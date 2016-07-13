@@ -2,7 +2,7 @@ module Greenhorn
   class Connection
     def initialize(options)
       Model.descendants.each do |model_class|
-        # Not using `Model.table_name_prefix=` b/c AR will 
+        # Not using `Model.table_name_prefix=` b/c AR will
         # ignore the prefix when using the custom name
         next if model_class.abstract_class
         prefix = options[:prefix].present? ? "#{options[:prefix]}_" : ''
