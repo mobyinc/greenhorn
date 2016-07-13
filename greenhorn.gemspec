@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "mysql2", "~> 0.4"
-  spec.add_dependency "activerecord", "~> 5.0"
+  spec.add_dependency "activerecord", "~> 4.2"
   spec.add_dependency "dimensions", "~> 1.3"
   spec.add_dependency "fog-aws", "~> 0.9"
   spec.add_dependency "httparty", "~> 0.13"
@@ -38,4 +38,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "byebug", "~> 9.0"
+  spec.add_development_dependency "rubocop", "~> 0.41"
 end
