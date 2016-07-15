@@ -8,6 +8,8 @@ module Greenhorn
       has_one :structure_element, foreign_key: 'elementId'
       has_one :entry, foreign_key: 'id'
       has_many :element_locales, foreign_key: 'elementId'
+
+      delegate :title, to: :content
     end
   end
 end
