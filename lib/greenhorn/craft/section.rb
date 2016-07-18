@@ -6,6 +6,7 @@ module Greenhorn
       has_many :entries, foreign_key: 'sectionId'
       has_one :section_locale, foreign_key: 'id'
       has_one :entry_type, foreign_key: 'sectionId'
+      has_many :section_locales, foreign_key: 'sectionId', class_name: 'SectionLocale'
       belongs_to :structure, foreign_key: 'structureId'
 
       before_create do
@@ -15,9 +16,10 @@ module Greenhorn
 
       after_create do
         EntryType.create!(section: self, handle: handle, name: name)
-        @fields.each { |field| section.add_field(field) } if @fields.present?
+        @fields.each { |field| add_field(field) } if @fields.present?
         root_element = StructureElement.create!(structure: structure, lft: 1, rgt: 2, level: 0)
         root_element.update!(root: root_element)
+        section_locales << SectionLocale.create!(locale: 'en_us', section: self)
       end
 
       def initialize(attrs)
