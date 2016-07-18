@@ -16,16 +16,11 @@ module Greenhorn
                       .map { |key, value| ["field_#{key}", value] }.to_h
         content_attrs = field_attrs.merge(title: attrs[:title])
 
+        slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
         element = Greenhorn::Craft::Element.create!(
+          slug: slug,
           type: 'Commerce_Variant',
           content: Greenhorn::Craft::Content.new(content_attrs)
-        )
-
-        slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
-        Greenhorn::Craft::ElementLocale.create!(
-          element: element,
-          slug: slug,
-          locale: 'en_us'
         )
 
         super(

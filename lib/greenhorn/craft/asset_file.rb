@@ -48,7 +48,7 @@ module Greenhorn
 
       def initialize(attrs)
         @file = attrs[:file]
-        attrs[:element] = Element.create!(type: 'Asset')
+        attrs[:element] = Element.create!(type: 'Asset', slug: attrs[:filename], content: Content.new(title: attrs[:filename]))
         attrs[:filename] ||= @file.split('/').last
 
         if AssetFile.find_by(filename: attrs[:filename], asset_folder: attrs[:asset_folder]).present?
@@ -57,9 +57,7 @@ module Greenhorn
           attrs[:filename] = "#{name}-#{SecureRandom.hex(2)}.#{extension}"
         end
 
-        attrs[:element].element_locales.create!(slug: attrs[:filename], locale: 'en_us')
         attrs[:width], attrs[:height] = FastImage.size(@file)
-        Content.create!(element: attrs[:element], title: attrs[:filename])
         attrs.delete(:file)
         super(attrs)
       end

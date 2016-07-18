@@ -28,8 +28,34 @@ module Greenhorn
 
       belongs_to :element, foreign_key: 'elementId'
 
-      before_create do
-        self.locale = 'en_us'
+      after_create do
+        @matrix_fields.each do |matrix_handle, block_groups|
+          block_groups.each do |block_group|
+            block_group.each do |block_handle, fields|
+              attrs = { element: element, matrix_handle: matrix_handle, block_handle: block_handle }
+              fields.each do |field_handle, value|
+                attrs["field_#{block_handle}_#{field_handle}"] = value
+              end
+              MatrixContent.create(attrs)
+            end
+          end
+        end
+      end
+
+      def initialize(attrs)
+        @matrix_fields = {}
+        attrs.each do |field_handle, value|
+          next if %i(field_description title).include?(field_handle)
+          handle = field_handle.split('field_').last
+
+          field = Field.find_by(handle: handle)
+          if field.matrix?
+            @matrix_fields[handle] = value
+            attrs.delete(field_handle)
+          end
+        end
+
+        super(attrs.merge(locale: 'en_us'))
       end
     end
   end

@@ -10,6 +10,20 @@ module Greenhorn
       has_many :element_locales, foreign_key: 'elementId'
 
       delegate :title, to: :content
+
+      after_create do
+        element_locales << ElementLocale.create!(
+          element: self,
+          slug: @attrs[:slug],
+          locale: 'en_us'
+        )
+      end
+
+      def initialize(attrs)
+        @attrs = attrs.dup
+        attrs.delete(:slug)
+        super(attrs)
+      end
     end
   end
 end

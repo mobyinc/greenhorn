@@ -27,14 +27,13 @@ module Greenhorn
                       .to_h
         @content_attrs = field_attrs.merge(title: attrs[:title])
 
+        slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
         element = Element.create!(
+          slug: slug,
           type: 'Entry',
           content: Content.new(@content_attrs),
           structure_element: StructureElement.create!(parent: parent_element)
         )
-
-        slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
-        ElementLocale.create!(element: element, slug: slug, locale: 'en_us')
 
         super(
           section: section,

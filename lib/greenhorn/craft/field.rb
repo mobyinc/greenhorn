@@ -155,6 +155,10 @@ module Greenhorn
         return nil if matrix_block_type.nil?
         "#{matrix_block_type.handle}_#{handle}"
       end
+
+      def matrix?
+        type == 'Matrix'
+      end
     end
   end
 end

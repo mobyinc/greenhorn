@@ -18,14 +18,13 @@ module Greenhorn
 
         attrs[:category_group] ||= attrs[:parent].category_group
 
+        slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
         element = Element.create!(
+          slug: slug,
           type: 'Category',
           content: Content.new(title: attrs[:title]),
           structure_element: StructureElement.create!(parent: parent_element)
         )
-
-        slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
-        ElementLocale.create!(element: element, slug: slug, locale: 'en_us')
 
         attrs.delete(:title)
         attrs.delete(:parent)
