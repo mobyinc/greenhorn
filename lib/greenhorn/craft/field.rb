@@ -106,6 +106,7 @@ module Greenhorn
         @attrs = attrs
         type = attrs[:type] || 'PlainText'
         default_settings = default_settings_for(type)
+        attrs[:restrictFiles] = 1 if attrs[:allowedKinds].present?
         settings = default_settings.merge(attrs.slice(*default_settings.keys))
 
         default_upload_location_source = settings[:defaultUploadLocationSource]

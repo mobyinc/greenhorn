@@ -43,10 +43,11 @@ module Greenhorn
           asset_source = Greenhorn::Craft::AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
 
           value = [value] unless value.is_a?(Array)
-          value.each do |file|
+          value.each do |file_attributes|
+            file_attributes = { url: file_attributes } unless file_attributes.is_a?(Hash)
             asset_file = Greenhorn::Craft::AssetFile.create!(
-              file: file,
-              kind: 'image',
+              file: file_attributes['url'],
+              title: file_attributes['title'],
               asset_source: asset_source,
               asset_folder: asset_source.asset_folder
             )

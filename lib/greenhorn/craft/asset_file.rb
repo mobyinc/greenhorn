@@ -39,7 +39,7 @@ module Greenhorn
         cache_headers = expires.present? ? { 'Cache-Control' => "max-age=#{cache_seconds}" } : {}
         file = dir.files.create(
           key: "#{asset_source.settings['subfolder']}/#{filename}",
-          body: HTTParty.get(@file),
+          body: HTTParty.get(URI.encode(@file)),
           public: true,
           metadata: cache_headers
         )
@@ -48,8 +48,15 @@ module Greenhorn
 
       def initialize(attrs)
         @file = attrs[:file]
-        attrs[:element] = Element.create!(type: 'Asset', slug: attrs[:filename], content: Content.new(title: attrs[:filename]))
         attrs[:filename] ||= @file.split('/').last
+        title = attrs[:title] || attrs[:filename]
+        attrs[:element] = Element.create!(type: 'Asset', slug: attrs[:filename], content: Content.new(title: title))
+        extension = attrs[:filename].split('.').last
+        attrs[:kind] =
+          case extension
+          when 'pdf' then 'pdf'
+          when 'jpg', 'jpeg', 'gif', 'png' then 'image'
+          end
 
         if AssetFile.find_by(filename: attrs[:filename], asset_folder: attrs[:asset_folder]).present?
           filename = attrs[:filename]
@@ -57,8 +64,9 @@ module Greenhorn
           attrs[:filename] = "#{name}-#{SecureRandom.hex(2)}.#{extension}"
         end
 
-        attrs[:width], attrs[:height] = FastImage.size(@file)
+        attrs[:width], attrs[:height] = FastImage.size(@file) if attrs[:kind] == 'image'
         attrs.delete(:file)
+        attrs.delete(:title)
         super(attrs)
       end
     end
