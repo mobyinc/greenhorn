@@ -22,13 +22,7 @@ module Greenhorn
         field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
         attrs[:type].verify_fields_attached!(field_attrs.keys)
 
-        asset_fields, regular_fields = field_attrs.partition do |field_handle, _value|
-          field = Greenhorn::Craft::Field.find_by(handle: field_handle)
-          field.type == 'Assets'
-        end.map(&:to_h)
-
         field_attrs.each { |key, _value| attrs.delete(key) }
-        field_attrs = regular_fields.map { |key, value| ["field_#{key}", value] }.to_h
         content_attrs = field_attrs.merge(title: attrs[:title])
 
         slug = attrs[:slug].present? ? attrs[:slug] : Utility::Slug.new(attrs[:title])
@@ -37,23 +31,6 @@ module Greenhorn
           type: 'Commerce_Product',
           content: Greenhorn::Craft::Content.new(content_attrs)
         )
-
-        asset_fields.each do |handle, value|
-          field = Greenhorn::Craft::Field.find_by(handle: handle)
-          asset_source = Greenhorn::Craft::AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
-
-          value = [value] unless value.is_a?(Array)
-          value.each do |file_attributes|
-            file_attributes = { url: file_attributes } unless file_attributes.is_a?(Hash)
-            asset_file = Greenhorn::Craft::AssetFile.create!(
-              file: file_attributes['url'],
-              title: file_attributes['title'],
-              asset_source: asset_source,
-              asset_folder: asset_source.asset_folder
-            )
-            Greenhorn::Craft::Relation.create!(field: field, source: element, target: asset_file.element)
-          end
-        end
 
         default_variant_params = attrs[:default_variant_params] || {}
         default_variant_params[:isDefault] = true

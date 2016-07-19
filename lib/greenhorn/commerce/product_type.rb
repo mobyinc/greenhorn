@@ -23,10 +23,20 @@ module Greenhorn
             add_field(field)
           end
         end
+
+        if @variant_fields.present?
+          @variant_fields.each do |field|
+            add_variant_field(field)
+          end
+        end
       end
 
       def add_field(field)
         field_layout.attach_field(field)
+      end
+
+      def add_variant_field(field)
+        variant_field_layout.attach_field(field)
       end
 
       def verify_fields_attached!(field_handles)
@@ -42,7 +52,9 @@ module Greenhorn
       def initialize(attrs)
         attrs[:hasVariants] = from_boolean(attrs[:hasVariants] || false)
         @fields = attrs[:fields]
+        @variant_fields = attrs[:variant_fields]
         attrs.delete(:fields)
+        attrs.delete(:variant_fields)
         super(attrs)
       end
     end

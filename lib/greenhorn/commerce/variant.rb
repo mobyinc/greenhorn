@@ -10,10 +10,9 @@ module Greenhorn
       belongs_to :product, foreign_key: 'productId'
 
       def initialize(attrs)
+        attrs = attrs.with_indifferent_access
         non_field_attrs = %w(title product).concat(self.class.column_names)
-        field_attrs = attrs
-                      .reject { |key, _value| non_field_attrs.include?(key) }
-                      .map { |key, value| ["field_#{key}", value] }.to_h
+        field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
         content_attrs = field_attrs.merge(title: attrs[:title])
 
         slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
