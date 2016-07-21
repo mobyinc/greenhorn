@@ -8,6 +8,7 @@ module Greenhorn
       has_one :structure_element, foreign_key: 'elementId'
       has_one :entry, foreign_key: 'id'
       has_many :element_locales, foreign_key: 'elementId'
+      has_many :neo_blocks, foreign_key: 'ownerId', class_name: 'Neo::Block'
 
       delegate :title, to: :content
 
@@ -23,6 +24,10 @@ module Greenhorn
         @attrs = attrs.dup
         attrs.delete(:slug)
         super(attrs)
+      end
+
+      def add_neo_block(attrs)
+        neo_blocks.create!(attrs)
       end
     end
   end

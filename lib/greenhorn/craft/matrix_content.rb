@@ -34,6 +34,7 @@ module Greenhorn
             create_table(table_name) do |t|
               t.integer :elementId
               t.column :locale, "char(12)"
+              t.string :title
               t.datetime :dateCreated
               t.datetime :dateUpdated
               t.column :uid, "char(36)"

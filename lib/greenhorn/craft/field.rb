@@ -11,6 +11,7 @@ module Greenhorn
             Number
             Assets
             Matrix
+            Neo
           )
         end
 
@@ -62,7 +63,7 @@ module Greenhorn
             viewMode: 'list',
             selectionLabel: ''
           }
-        when 'Matrix'
+        when 'Matrix', 'Neo'
           { maxBlocks: nil }
         end
       end
@@ -70,6 +71,7 @@ module Greenhorn
       serialize :settings, JSON
       belongs_to :field_group, foreign_key: 'groupId'
       has_many :block_types, foreign_key: 'fieldId', class_name: 'MatrixBlockType'
+      has_many :neo_block_types, foreign_key: 'fieldId', class_name: 'Neo::BlockType'
 
       validate :handle_is_unique
 
@@ -81,8 +83,12 @@ module Greenhorn
       after_create do
         if type == 'Matrix'
           MatrixContent.add_table(handle)
-          @attrs[:block_types].each do |block_type|
+          (@attrs[:block_types] || []).each do |block_type|
             block_types.create!(block_type)
+          end
+        elsif type == 'Neo'
+          (@attrs[:block_types] || []).each do |block_type|
+            neo_block_types.create!(block_type)
           end
         elsif part_of_matrix?
           column_type = self.class.column_type_for(type)
@@ -90,6 +96,17 @@ module Greenhorn
         else
           column_type = self.class.column_type_for(type)
           Content.add_field_column(handle, column_type) if column_type.present?
+        end
+      end
+
+      def add_block_type(block_type)
+        if type == 'Matrix'
+          block_types.find_or_create_by!(block_type)
+        elsif type == 'Neo'
+          existing_block_type = neo_block_types.find_by(name: block_type[:name])
+          existing_block_type || neo_block_types.create!(block_type)
+        else
+          raise "Can't add block type to a #{type} field"
         end
       end
 

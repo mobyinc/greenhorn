@@ -11,14 +11,6 @@ module Greenhorn
       belongs_to :structure, foreign_key: 'structureId'
       belongs_to :root, foreign_key: 'root', class_name: 'StructureElement'
 
-      def print_tree
-        p '---'
-        structure.structure_elements.each do |structure_element|
-          title = structure_element.element.try(:title) || '[Root]'
-          puts "#{title} - #{structure_element.level} - (#{structure_element.lft}, #{structure_element.rgt})"
-        end
-      end
-
       def child_elements
         structure.structure_elements.where("level > #{level} AND lft > #{lft} AND rgt < #{rgt}")
       end
@@ -29,8 +21,7 @@ module Greenhorn
       end
 
       def initialize(attrs)
-        @parent = attrs[:parent]
-        attrs.delete(:parent)
+        @parent = attrs.delete(:parent)
         if @parent.present?
           attrs[:root] = @parent.root
           attrs[:level] = @parent.level + 1
@@ -47,7 +38,7 @@ module Greenhorn
         parent = @parent
         elements_with_children = {}
         until parent.nil?
-          elements_with_children[parent] = parent.child_elements << self
+          elements_with_children[parent] = parent.reload.child_elements << self
           parent = parent.parent
         end
 
@@ -58,6 +49,8 @@ module Greenhorn
           new_left = min_left.present? ? min_left - 1 : parent.lft
           element.update(lft: new_left, rgt: new_right)
         end
+
+        update(root: self) if root.nil?
       end
     end
   end

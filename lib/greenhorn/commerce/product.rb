@@ -7,7 +7,7 @@ module Greenhorn
         'commerce_products'
       end
 
-      belongs_to :element, foreign_key: 'id'
+      belongs_to :element, foreign_key: 'id', class_name: 'Craft::Element'
       belongs_to :type, class_name: 'ProductType', foreign_key: 'typeId'
       belongs_to :tax_category, foreign_key: 'taxCategoryId'
       belongs_to :default_variant, class_name: 'Variant', foreign_key: 'defaultVariantId'
@@ -48,6 +48,10 @@ module Greenhorn
         attrs.delete(:title)
 
         super(attrs)
+      end
+
+      def add_neo_block(attrs)
+        element.add_neo_block(attrs)
       end
     end
   end
