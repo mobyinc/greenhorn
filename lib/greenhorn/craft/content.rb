@@ -47,6 +47,7 @@ module Greenhorn
 
           value = [value] unless value.is_a?(Array)
           value.each do |file_attributes|
+            next if file_attributes.nil?
             file_attributes = { 'url' => file_attributes } unless file_attributes.is_a?(Hash)
             asset_file = Greenhorn::Craft::AssetFile.create!(
               file: file_attributes['url'],

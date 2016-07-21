@@ -1,4 +1,5 @@
 require 'httparty'
+require 'addressable'
 require 'fog/aws'
 require 'fastimage'
 require 'greenhorn/craft/base_model'
@@ -37,13 +38,17 @@ module Greenhorn
             amount.send(:years).to_i
           end
         cache_headers = expires.present? ? { 'Cache-Control' => "max-age=#{cache_seconds}" } : {}
-        file = dir.files.create(
-          key: "#{asset_source.settings['subfolder']}/#{filename}",
-          body: HTTParty.get(URI.encode(@file)),
-          public: true,
-          metadata: cache_headers
-        )
-        update(size: file.content_length)
+        begin
+          file = dir.files.create(
+            key: "#{asset_source.settings['subfolder']}/#{filename}",
+            body: HTTParty.get(@file, uri_adapter: Addressable::URI),
+            public: true,
+            metadata: cache_headers
+          )
+          update(size: file.content_length)
+        rescue Exception => e
+          p "WARNING: Unable to fetch asset #{@file}, error was: #{e}"
+        end
       end
 
       def initialize(attrs)
