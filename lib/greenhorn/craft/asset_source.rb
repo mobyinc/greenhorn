@@ -11,23 +11,22 @@ module Greenhorn
         def default_settings_for(type)
           case type
           when 'S3'
-            {
-              subfolder: '',
-              publicUrls: '0',
-              urlPrefix: '',
-              expires: ''
-            }
+            { subfolder: '', publicUrls: '0', urlPrefix: '', expires: '' }
+          when 'Local'
+            { publicUrls: '1' }
           end
         end
       end
 
-      SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location).freeze
+      SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location path).freeze
 
       belongs_to :field_layout, foreign_key: 'fieldLayoutId'
-      has_one :asset_folder, foreign_key: 'sourceId'
+      has_one :asset_folder, foreign_key: 'sourceId' # TODO: this should be has_many
 
+      validates :type, inclusion: { in: %w(S3 Local) }
       validate :config_is_valid
       validate :url_prefix_is_valid
+
       serialize :settings, JSON
 
       before_create do
@@ -39,6 +38,8 @@ module Greenhorn
       end
 
       def initialize(attrs)
+        require_attributes!(attrs, %i(name type))
+
         default_settings = self.class.default_settings_for(attrs[:type])
         attrs[:settings] = default_settings.merge(attrs.slice(*SETTINGS_ATTRS))
         SETTINGS_ATTRS.each { |key| attrs.delete(key) }
@@ -59,6 +60,8 @@ module Greenhorn
 
       def required_settings
         case type
+        when 'Local'
+          %w(path)
         when 'S3'
           %w(keyId secret bucket location)
         end

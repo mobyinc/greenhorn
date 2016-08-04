@@ -11,6 +11,13 @@ module Greenhorn
 
       validates :section, presence: true
 
+      class << self
+        def find_by_title(title)
+          matching_elements = Content.where(title: title).map(&:element)
+          Entry.find_by(element: matching_elements)
+        end
+      end
+
       def initialize(attrs)
         if attrs[:parent].present?
           section = attrs[:parent].section

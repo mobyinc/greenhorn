@@ -147,7 +147,7 @@ module Greenhorn
       end
 
       def handle_is_unique
-        errors.add(:handle, "is already taken") if Field.find_by(handle: handle, context: 'global').present?
+        errors.add(:handle, 'is already taken') if Field.find_by(handle: handle, context: 'global').present?
       end
 
       def part_of_matrix?

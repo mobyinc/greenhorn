@@ -8,6 +8,13 @@ module Greenhorn
       validates :category_group, presence: true
       has_one :structure_element, through: :element
 
+      class << self
+        def find_by_title(title)
+          matching_elements = Content.where(title: title).map(&:element)
+          Category.find_by(element: matching_elements)
+        end
+      end
+
       def initialize(attrs)
         parent_element =
           if attrs[:parent].present?

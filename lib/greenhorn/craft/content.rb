@@ -45,6 +45,9 @@ module Greenhorn
           field = Greenhorn::Craft::Field.find_by(handle: handle)
           asset_source = Greenhorn::Craft::AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
 
+          upload_subpath = field.settings['singleUploadLocationSubpath']
+          folder = upload_subpath.present? ? AssetFolder.find_by(path: upload_subpath) : asset_source.asset_folder
+
           value = [value] unless value.is_a?(Array)
           value.each do |file_attributes|
             next if file_attributes.nil?
@@ -53,10 +56,15 @@ module Greenhorn
               file: file_attributes['url'],
               title: file_attributes['title'],
               asset_source: asset_source,
-              asset_folder: asset_source.asset_folder
+              asset_folder: folder
             )
             Greenhorn::Craft::Relation.create!(field: field, source: element, target: asset_file.element)
           end
+        end
+
+        @category_fields.each do |handle, value|
+          field = Greenhorn::Craft::Field.find_by(handle: handle)
+          Greenhorn::Craft::Relation.create!(field: field, source: element, target: value.element)
         end
       end
 
@@ -69,6 +77,12 @@ module Greenhorn
           field.type == 'Assets'
         end.map(&:to_h)
         @asset_fields = asset_fields
+
+        category_fields = regular_fields.select do |field_handle, _value|
+          Greenhorn::Craft::Field.find_by(handle: field_handle).type == 'Categories'
+        end
+        category_fields.keys.each { |key| regular_fields.delete(key) }
+        @category_fields = category_fields
 
         field_attrs.each { |key, _value| attrs.delete(key) }
         field_attrs = regular_fields.map { |key, value| ["field_#{key}", value] }.to_h

@@ -32,7 +32,7 @@ module Greenhorn
       end
 
       def add_child(block)
-        new_child_blocks = (self.childBlocks || []) << block.handle
+        new_child_blocks = (childBlocks || []) << block.handle
         update!(childBlocks: new_child_blocks.uniq)
       end
     end
