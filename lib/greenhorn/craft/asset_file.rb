@@ -86,8 +86,13 @@ module Greenhorn
 
         @file = attrs[:file]
         attrs[:filename] ||= @file.split('/').last
-        title = attrs[:title] || attrs[:filename]
-        attrs[:element] = Element.create!(type: 'Asset', slug: attrs[:filename], content: Content.new(title: title))
+
+        non_field_attrs = %i(file asset_source asset_folder title).concat(self.class.column_names.map(&:to_sym))
+        field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
+        field_attrs.each { |key, _value| attrs.delete(key) }
+        content_attrs = field_attrs.merge(title: attrs[:title] || attrs[:filename])
+
+        attrs[:element] = Element.create!(type: 'Asset', slug: attrs[:filename], content: Content.new(content_attrs))
         extension = attrs[:filename].split('.').last
         attrs[:kind] =
           case extension

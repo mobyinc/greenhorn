@@ -16,9 +16,19 @@ module Greenhorn
       end
 
       def attach_field(field_or_handle)
-        field = field_or_handle.is_a?(Field) ? field_or_handle : Field.find_by(handle: field_or_handle)
+        field = field_for(field_or_handle)
         raise "Couldn't find field with handle `#{field_or_handle}`" unless field.present?
         attached_fields.create!(field: field, tab: default_tab)
+      end
+
+      def field?(field_or_handle)
+        attached_fields.find_by(field: field_for(field_or_handle)).present?
+      end
+
+      private
+
+      def field_for(field_or_handle)
+        field = field_or_handle.is_a?(Field) ? field_or_handle : Field.find_by(handle: field_or_handle)
       end
     end
   end

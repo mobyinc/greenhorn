@@ -28,7 +28,7 @@ module Greenhorn
 
       belongs_to :element, foreign_key: 'elementId'
 
-      after_create do
+      after_update do
         @matrix_fields.each do |matrix_handle, block_groups|
           block_groups.each do |block_group|
             block_group.each do |block_handle, fields|
@@ -48,16 +48,24 @@ module Greenhorn
           upload_subpath = field.settings['singleUploadLocationSubpath']
           folder = upload_subpath.present? ? AssetFolder.find_by(path: upload_subpath) : asset_source.asset_folder
 
+          current_relations = Craft::Relation.where(field: field, source: element)
+          current_relations.destroy_all # clear current assets associated w/ this field
+
           value = [value] unless value.is_a?(Array)
           value.each do |file_attributes|
             next if file_attributes.nil?
-            file_attributes = { 'url' => file_attributes } unless file_attributes.is_a?(Hash)
-            asset_file = Greenhorn::Craft::AssetFile.create!(
-              file: file_attributes['url'],
-              title: file_attributes['title'],
-              asset_source: asset_source,
-              asset_folder: folder
-            )
+            asset_file =
+              if file_attributes.is_a?(Craft::AssetFile)
+                file_attributes
+              else
+                file_attributes = { 'url' => file_attributes } unless file_attributes.is_a?(Hash)
+                Greenhorn::Craft::AssetFile.create!(
+                  file: file_attributes['url'],
+                  title: file_attributes['title'],
+                  asset_source: asset_source,
+                  asset_folder: folder
+                )
+              end
             Greenhorn::Craft::Relation.create!(field: field, source: element, target: asset_file.element)
           end
         end
@@ -69,6 +77,10 @@ module Greenhorn
       end
 
       def initialize(attrs)
+        super(attrs)
+      end
+
+      def assign_attributes(attrs)
         @matrix_fields = {}
 
         field_attrs = attrs.reject { |key, _value| %i(title).include?(key.to_sym) }
@@ -97,7 +109,13 @@ module Greenhorn
           end
         end
 
-        super(field_attrs.merge(locale: 'en_us', title: attrs[:title]))
+        field_attrs[:title] = attrs[:title] if attrs[:title].present?
+
+        super(field_attrs.merge(locale: 'en_us'))
+      end
+
+      def field(handle)
+        self["field_#{handle}"]
       end
     end
   end
