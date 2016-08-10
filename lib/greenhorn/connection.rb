@@ -30,6 +30,10 @@ module Greenhorn
       ActiveRecord::Base.transaction(&process)
     end
 
+    def execute(command)
+      @connection.execute(command)
+    end
+
     attr_reader :config
 
     def extend_config(attrs)

@@ -9,6 +9,7 @@ module Greenhorn
       has_many :element_locales, through: :element
       has_one :structure_element, through: :element
       has_one :entry_type, through: :section
+      has_one :field_layout, through: :entry_type
       has_one :content, through: :element
       accepts_nested_attributes_for :content
 
@@ -24,12 +25,16 @@ module Greenhorn
       end
 
       def initialize(attrs)
+        require_attributes!(attrs)
+
         if attrs[:parent].present?
           section = attrs[:parent].section
           parent_element = attrs[:parent].structure_element
-        else
+        elsif attrs[:section].present?
           section = attrs[:section]
           parent_element = section.root_element
+        else
+          raise Errors::MissingAttributeError, 'Must specify either `section` or `parent` when creating entry'
         end
 
         slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
@@ -55,11 +60,6 @@ module Greenhorn
         content_attrs.keys.each { |key| attrs.delete(key) }
         content.update(content_attrs)
         super(attrs)
-      end
-
-      def method_missing(method, *options)
-        method_matches_field = entry_type.field_layout.field?(method)
-        method_matches_field ? content.field(method) : super
       end
 
       def slug

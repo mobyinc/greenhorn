@@ -13,6 +13,10 @@ module Greenhorn
       belongs_to :element, foreign_key: 'id'
       belongs_to :asset_folder, foreign_key: 'folderId'
       belongs_to :asset_source, foreign_key: 'sourceId'
+      has_one :field_layout, through: :asset_source
+      has_one :content, through: :element
+
+      delegate :title, to: :element
 
       before_save { self.dateModified = Time.now.utc }
       after_create do
@@ -80,19 +84,30 @@ module Greenhorn
         update(size: file.content_length)
       end
 
+      # Instantiates a new asset file
+      #
+      # @param attrs [Hash]
+      # @option attrs [AssetFolder] asset_folder The folder to place this file into
+      # @option attrs [String] file A local path or URL to the file being added
+      # @option attrs [String] filename (file.split('/').last) The filename to associate with the file
+      # @option attrs [String] title (filename) The title to associate with the file
+      # @option attrs [Hash] (...field_attrs) Values for any custom fields you've associated with the the asset_folder's asset_source
+      # @return [AssetFile]
+      #
+      # @example Initialize an asset file from a URL with custom fields
+      #   AssetFile.new(
+      #     asset_folder: AssetFolder.last,
+      #     file: 'http://example.com/image.jpg',
+      #     customField: 'customVal'
+      #     customField2: 'customVal2'
+      #   )
       def initialize(attrs)
         require_attributes!(attrs, %i(file asset_folder))
-        attrs[:asset_source] = attrs[:asset_folder].asset_source
 
         @file = attrs[:file]
         attrs[:filename] ||= @file.split('/').last
+        attrs[:asset_source] = attrs[:asset_folder].try(:asset_source)
 
-        non_field_attrs = %i(file asset_source asset_folder title).concat(self.class.column_names.map(&:to_sym))
-        field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
-        field_attrs.each { |key, _value| attrs.delete(key) }
-        content_attrs = field_attrs.merge(title: attrs[:title] || attrs[:filename])
-
-        attrs[:element] = Element.create!(type: 'Asset', slug: attrs[:filename], content: Content.new(content_attrs))
         extension = attrs[:filename].split('.').last
         attrs[:kind] =
           case extension
@@ -111,6 +126,25 @@ module Greenhorn
         attrs.delete(:file)
         attrs.delete(:title)
         super(attrs)
+      end
+
+      def assign_attributes(attrs)
+        attrs[:title] ||= attrs[:filename]
+        content_attrs = content_attributes_for(attrs)
+        attrs = non_content_attributes_for(attrs)
+        attrs[:element] = element || Element.create!(type: 'Asset', slug: attrs[:filename])
+
+        if attrs[:element].content.present?
+          attrs[:element].content.update(content_attrs)
+        else
+          attrs[:element].content = Content.new(content_attrs)
+        end
+
+        super(attrs)
+      end
+
+      def non_field_attrs
+        %i(file asset_source asset_folder title).concat(self.class.column_names.map(&:to_sym))
       end
     end
   end

@@ -27,6 +27,14 @@ module Greenhorn
       self.dateUpdated = Time.now.utc
     end
 
+    after_create do
+      assign_fields
+    end
+
+    after_update do
+      assign_fields
+    end
+
     def from_boolean(bool)
       bool ? 1 : 0
     end
@@ -35,7 +43,7 @@ module Greenhorn
       table_name
     end
 
-    def require_attributes!(attrs, required_keys)
+    def require_attributes!(attrs, required_keys = [])
       class_name = self.class.name.demodulize
       if attrs.nil?
         raise Errors::MissingAttributeError, "Can't create #{class_name} without #{required_keys.join(', ')}"
@@ -48,6 +56,31 @@ module Greenhorn
 
     def config
       self.class.instance_variable_get('@config')
+    end
+
+    def assign_fields
+      (@fields || []).each do |field|
+        field_layout.attach_field(field)
+      end
+    end
+
+    def content_attributes_for(attrs)
+      field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
+      field_attrs.merge(title: attrs[:title])
+    end
+
+    def non_content_attributes_for(attrs)
+      content_keys = content_attributes_for(attrs).keys
+      attrs.reject { |key, _value| content_keys.include?(key) }
+    end
+
+    def method_missing(method, *options)
+      if respond_to?(:field_layout) && respond_to?(:content)
+        method_matches_field = field_layout.field?(method)
+        method_matches_field ? content.field(method) : super
+      else
+        super
+      end
     end
   end
 end

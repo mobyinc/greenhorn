@@ -4,7 +4,12 @@ Greenhorn is a Ruby gem that provides an API for accessing a [Craft CMS](https:/
 Greenhorn aims to provide the behavior you would expect if you were using the Craft interface directly, and abstracts away Craft's idiosyncratic database schema.
 
 ## Status
-This is alpha software and only a handful of the Craft interface has been implemented. We’re fleshing it out as we go along and things become necessary.
+This is alpha software and only a small fraction of the Craft interface has been implemented. We’re fleshing it out as we go along and things become necessary.
+
+### Implemented Features
+* Creating fields
+* Creating asset sources using local or S3 provider
+* Creating asset files
 
 ## Installation
 ```
@@ -28,7 +33,7 @@ craft = Greenhorn::Connection.new(
 ```
 
 ### Transactions
-When doing a batch of operations, you can wrap your processing in a tranasaction that will roll back incomplete changes if an error occurs:
+When doing a batch of operations, you can wrap your processing in a transaction that will roll back incomplete changes if an error occurs:
 
 ```ruby
 craft.transaction do

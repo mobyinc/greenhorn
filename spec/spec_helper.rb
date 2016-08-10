@@ -11,12 +11,27 @@ connection = Greenhorn::Connection.new(
 )
 
 RSpec.configure do |config|
-  config.before(:suite) { DatabaseCleaner.strategy = :transaction }
+  config.before(:suite) do
+    DatabaseCleaner.strategy = :truncation
+    statements = File.read(File.expand_path('../greenhorn_test.sql', __FILE__)).split("\n\n")
+    ActiveRecord::Base.transaction do
+      ActiveRecord::Base.connection.execute('SET foreign_key_checks = 0;')
+      statements.each do |stmt|
+        begin
+          ActiveRecord::Base.connection.execute(stmt)
+        rescue Exception; end
+      end
+    end
+  end
 
   config.before(:each) do
     DatabaseCleaner.start
     @connection = connection
   end
 
-  config.after(:each) { DatabaseCleaner.clean }
+  config.around(:each) do |example|
+    DatabaseCleaner.cleaning do
+      example.run
+    end
+  end
 end

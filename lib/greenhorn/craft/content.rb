@@ -76,10 +76,6 @@ module Greenhorn
         end
       end
 
-      def initialize(attrs)
-        super(attrs)
-      end
-
       def assign_attributes(attrs)
         @matrix_fields = {}
 

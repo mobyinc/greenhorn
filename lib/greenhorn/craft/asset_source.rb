@@ -31,10 +31,8 @@ module Greenhorn
 
       before_create do
         self.handle = Utility::Slug.new(name, :underscore) unless handle.present?
-        self.asset_folder = AssetFolder.new(name: name, path: '')
-      end
-      after_create do
-        update(field_layout: FieldLayout.new(type: 'Asset'))
+        build_asset_folder(name: name, path: '')
+        create_field_layout(type: 'Asset')
       end
 
       def initialize(attrs)
@@ -46,8 +44,12 @@ module Greenhorn
         super(attrs)
       end
 
+      def assign_attributes(attrs)
+        @fields = attrs.delete(:fields)
+        super(attrs)
+      end
+
       def config
-        p settings
         JSON.parse(settings)
       end
 
