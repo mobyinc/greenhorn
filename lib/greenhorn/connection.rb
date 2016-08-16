@@ -1,6 +1,7 @@
 module Greenhorn
   class Connection
     def initialize(options)
+      options = options.with_indifferent_access
       @config = OpenStruct.new(
         base_path: options[:base_path]
       )
