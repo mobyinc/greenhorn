@@ -25,7 +25,6 @@ RSpec.configure do |config|
   end
 
   config.before(:each) do
-    DatabaseCleaner.start
     @connection = connection
   end
 
