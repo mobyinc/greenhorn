@@ -74,6 +74,7 @@ module Greenhorn
       attrs.reject { |key, _value| content_keys.include?(key) }
     end
 
+    # @!visibility private
     def method_missing(method, *options)
       if respond_to?(:field_layout) && respond_to?(:content)
         method_matches_field = field_layout.field?(method)

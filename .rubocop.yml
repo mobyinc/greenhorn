@@ -9,6 +9,10 @@ Metrics/AbcSize:
   Max: 300
 Metrics/MethodLength:
   Max: 50
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
 Style/Documentation:
   Enabled: false
 Style/RescueModifier:

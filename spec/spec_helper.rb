@@ -7,12 +7,15 @@ connection = Greenhorn::Connection.new(
   host: 'localhost',
   username: 'root',
   password: 'password',
-  database: 'greenhorn_dev'
+  database: 'greenhorn_test'
 )
 
 RSpec.configure do |config|
   config.before(:suite) do
     DatabaseCleaner.strategy = :truncation
+  end
+
+  config.before(:each) do
     statements = File.read(File.expand_path('../greenhorn_test.sql', __FILE__)).split("\n\n")
     ActiveRecord::Base.transaction do
       ActiveRecord::Base.connection.execute('SET foreign_key_checks = 0;')
