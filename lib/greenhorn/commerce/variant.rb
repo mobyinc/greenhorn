@@ -8,6 +8,9 @@ module Greenhorn
       end
 
       belongs_to :product, foreign_key: 'productId'
+      belongs_to :element, foreign_key: 'id', class_name: 'Greenhorn::Craft::Element'
+
+      delegate :title, to: :element
 
       def initialize(attrs)
         attrs = attrs.with_indifferent_access

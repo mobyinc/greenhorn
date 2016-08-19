@@ -1,8 +1,11 @@
 require 'greenhorn/craft/base_model'
+require 'greenhorn/craft/field_behaviors'
 
 module Greenhorn
   module Craft
     class AssetSource < BaseModel
+      include Craft::FieldBehaviors
+
       class << self
         def table
           'assetsources'
@@ -41,11 +44,6 @@ module Greenhorn
         default_settings = self.class.default_settings_for(attrs[:type])
         attrs[:settings] = default_settings.merge(attrs.slice(*SETTINGS_ATTRS))
         SETTINGS_ATTRS.each { |key| attrs.delete(key) }
-        super(attrs)
-      end
-
-      def assign_attributes(attrs)
-        @fields = attrs.delete(:fields)
         super(attrs)
       end
 

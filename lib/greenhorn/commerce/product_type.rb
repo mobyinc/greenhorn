@@ -3,27 +3,46 @@ require 'greenhorn/commerce/base_model'
 module Greenhorn
   module Commerce
     class ProductType < BaseModel
-      def self.table
-        'commerce_producttypes'
+      include Craft::FieldBehaviors
+
+      # @!visibility private
+      class << self
+        def table
+          'commerce_producttypes'
+        end
+
+        # Creates a new product type
+        #
+        # @param attrs [Hash]
+        # @option attrs [String] name The product type's name
+        # @option attrs [String] handle (inferred) The product type's handle (auto-generated from `name` if not passed)
+        # @option attrs [Boolean] hasUrls (false) Whether this product type's products have URLs
+        # @option attrs [Boolean] hasDimensions (false) Whether this product type's products have dimensions
+        # @option attrs [Boolean] hasVariants (false) Whether this product type's products have variants
+        # @option attrs [Boolean] hasVariantTitleField (false) Whether this product type's products' variants have their own titles
+        # @option attrs [Array<Craft::Field>] fields ([]) The fields to associate with this product type
+        # @return [ProductType]
+        #
+        # @example Create a product type with fields
+        #   ProductType.create(name: 'Books', fields: Craft::Field.create(name: 'Description'))
+        def create(attrs)
+          super(attrs)
+        end
       end
 
-      belongs_to :field_layout, class_name: 'Greenhorn::Craft::FieldLayout', foreign_key: 'fieldLayoutId'
       belongs_to :variant_field_layout, class_name: 'Greenhorn::Craft::FieldLayout', foreign_key: 'variantFieldLayoutId'
 
       before_create do
         self.handle = Utility::Slug.new(name) unless handle.present?
         self.titleFormat = '{product.title}' unless titleFormat.present?
         self.field_layout = Greenhorn::Craft::FieldLayout.create!(type: 'Commerce_Product')
-        self.variant_field_layout = Greenhorn::Craft::FieldLayout.create!(type: 'Commerce_Variant')
+
+        if hasVariants
+          self.variant_field_layout = Greenhorn::Craft::FieldLayout.create!(type: 'Commerce_Variant')
+        end
       end
 
       after_create do
-        if @fields.present?
-          @fields.each do |field|
-            add_field(field)
-          end
-        end
-
         if @variant_fields.present?
           @variant_fields.each do |field|
             add_variant_field(field)
@@ -31,31 +50,47 @@ module Greenhorn
         end
       end
 
-      def add_field(field)
-        field_layout.attach_field(field)
-      end
-
+      # Attaches a field to the product type's variant field list
       def add_variant_field(field)
         variant_field_layout.attach_field(field)
       end
 
-      def verify_fields_attached!(field_handles)
-        field_handles = field_handles.map(&:to_s)
-        attached_field_handles = field_layout.attached_fields.map(&:field).map(&:handle)
-        field_handles.each do |field_handle|
-          unless attached_field_handles.include?(field_handle)
-            raise "Field `#{field_handle}` not attached to this product type"
-          end
-        end
+      # @!visibility private
+      def initialize(attrs)
+        require_attributes!(attrs, %i(name))
+
+        attrs[:hasVariants] = false if attrs[:hasVariants].nil?
+        super(attrs)
       end
 
-      def initialize(attrs)
-        attrs[:hasVariants] = from_boolean(attrs[:hasVariants] || false)
-        @fields = attrs[:fields]
+      # @!visibility private
+      def assign_attributes(attrs)
         @variant_fields = attrs[:variant_fields]
-        attrs.delete(:fields)
         attrs.delete(:variant_fields)
+
         super(attrs)
+      end
+
+      # Updates an existing product type
+      #
+      # @param attrs [Hash]
+      # @option attrs [String] name The product type's name
+      # @option attrs [String] handle (inferred) The product type's handle (auto-generated from `name` if not passed)
+      # @option attrs [Boolean] hasUrls (false) Whether this product type's products have URLs
+      # @option attrs [Boolean] hasDimensions (false) Whether this product type's products have dimensions
+      # @option attrs [Boolean] hasVariants (false) Whether this product type's products have variants
+      # @option attrs [Boolean] hasVariantTitleField (false) Whether this product type's products' variants have their own titles
+      # @option attrs [Array<Craft::Field>] fields ([]) The fields to associate with this product type
+      # @return [ProductType]
+      def update(attrs)
+        super(attrs)
+      end
+
+      # Removes an existing product type
+      #
+      # @return [ProductType]
+      def destroy
+        super
       end
     end
   end

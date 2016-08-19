@@ -27,14 +27,6 @@ module Greenhorn
       self.dateUpdated = Time.now.utc
     end
 
-    after_create do
-      assign_fields
-    end
-
-    after_update do
-      assign_fields
-    end
-
     def from_boolean(bool)
       bool ? 1 : 0
     end
@@ -58,12 +50,6 @@ module Greenhorn
       self.class.instance_variable_get('@config')
     end
 
-    def assign_fields
-      (@fields || []).each do |field|
-        field_layout.attach_field(field)
-      end
-    end
-
     def content_attributes_for(attrs)
       field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
       field_attrs.merge(title: attrs[:title])
@@ -76,7 +62,7 @@ module Greenhorn
 
     # @!visibility private
     def method_missing(method, *options)
-      if respond_to?(:field_layout) && respond_to?(:content)
+      if respond_to?(:field_layout) && field_layout.present? && respond_to?(:content)
         method_matches_field = field_layout.field?(method)
         method_matches_field ? content.field(method) : super
       else

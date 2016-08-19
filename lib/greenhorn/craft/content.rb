@@ -9,6 +9,8 @@ module Greenhorn
         end
 
         def add_field_column(handle, type = :text)
+          reset_column_information
+
           last_field_column = column_names.reverse.find { |col| col[0..5] == 'field_' }
           column_name = "field_#{handle}"
           ActiveRecord::Migration.class_eval do
@@ -18,6 +20,8 @@ module Greenhorn
         end
 
         def remove_field_column(handle)
+          reset_column_information
+
           column_name = "field_#{handle}"
           table_name = self.table_name
           ActiveRecord::Migration.class_eval do
