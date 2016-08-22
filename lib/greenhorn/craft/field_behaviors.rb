@@ -5,6 +5,10 @@ module Greenhorn
         base.class_eval do
           belongs_to :field_layout, class_name: 'Greenhorn::Craft::FieldLayout', foreign_key: 'fieldLayoutId'
 
+          delegate :field?, to: :field_layout
+          delegate :add_field, to: :field_layout
+          delegate :remove_field, to: :field_layout
+
           after_create { assign_fields }
           after_update { assign_fields }
         end
@@ -14,10 +18,6 @@ module Greenhorn
         (@fields || []).each do |field|
           add_field(field)
         end
-      end
-
-      def add_field(field)
-        field_layout.attach_field(field)
       end
 
       def assign_attributes(attrs)

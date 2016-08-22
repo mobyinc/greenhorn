@@ -15,10 +15,16 @@ module Greenhorn
         tabs.first || tabs.create!(name: 'Tab 1')
       end
 
-      def attach_field(field_or_handle)
+      def add_field(field_or_handle)
         field = field_for(field_or_handle)
         raise "Couldn't find field with handle `#{field_or_handle}`" unless field.present?
         attached_fields.create!(field: field, tab: default_tab)
+      end
+
+      def remove_field(field_or_handle)
+        attached_field = attached_fields.find_by(field: field_for(field_or_handle))
+        raise "Couldn't find attached field with handle `#{field_or_handle}`" unless attached_field.present?
+        attached_field.destroy
       end
 
       def field?(field_or_handle)
