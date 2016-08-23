@@ -91,7 +91,8 @@ module Greenhorn
       # @option attrs [String] file A local path or URL to the file being added
       # @option attrs [String] filename (file.split('/').last) The filename to associate with the file
       # @option attrs [String] title (filename) The title to associate with the file
-      # @option attrs [Hash] (...field_attrs) Values for any custom fields you've associated with the asset_folder's asset_source
+      # @option attrs [Hash] (...field_attrs) Values for any custom fields you've associated with the
+      #   asset_folder's asset_source
       # @return [AssetFile]
       #
       # @example Initialize an asset file from a URL with custom fields

@@ -11,7 +11,10 @@ RSpec.describe Greenhorn::Commerce::ProductType do
     end
 
     it 'saves and updates a new record' do
-      product_type = described_class.create(name: 'Books', fields: [Greenhorn::Craft::Field.create(name: 'Description')])
+      product_type = described_class.create(
+        name: 'Books',
+        fields: [Greenhorn::Craft::Field.create(name: 'Description')]
+      )
       expect(product_type.persisted?).to eq(true)
       expect(product_type.name).to eq('Books')
       expect(product_type.handle).to eq('books')

@@ -14,8 +14,8 @@ module Greenhorn
             end
           end
 
-          after_create { self.element.content = Content.new(@content_attrs) }
-          after_update { self.element.content.update(@content_attrs) }
+          after_create { element.content = Content.new(@content_attrs) }
+          after_update { element.content.update(@content_attrs) }
         end
       end
 
@@ -43,7 +43,11 @@ module Greenhorn
       end
 
       def field_layout_method
-        self.class.respond_to?(:field_layout_association) ? self.class.field_layout_association : self.class.field_layout_parent
+        if self.class.respond_to?(:field_layout_association)
+          self.class.field_layout_association
+        else
+          self.class.field_layout_parent
+        end
       end
     end
   end

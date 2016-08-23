@@ -34,7 +34,7 @@ module Greenhorn
       private
 
       def field_for(field_or_handle)
-        field = field_or_handle.is_a?(Field) ? field_or_handle : Field.find_by(handle: field_or_handle)
+        field_or_handle.is_a?(Field) ? field_or_handle : Field.find_by(handle: field_or_handle)
       end
     end
   end

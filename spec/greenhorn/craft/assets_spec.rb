@@ -25,7 +25,11 @@ RSpec.describe Greenhorn::Craft::AssetFile do
       let(:test_image) { 'https://homepages.cae.wisc.edu/~ece533/images/boat.png' }
 
       it 'persists the record and saves file to local path' do
-        file = described_class.create!(file: test_image, asset_folder: local_source.asset_folder, shortDescription: 'hello')
+        file = described_class.create!(
+          file: test_image,
+          asset_folder: local_source.asset_folder,
+          shortDescription: 'hello'
+        )
         expect(file.persisted?).to eq(true)
         expect(file.reload.shortDescription).to eq('hello')
         expect(file.title).to eq('boat.png')

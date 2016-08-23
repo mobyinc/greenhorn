@@ -13,7 +13,13 @@ RSpec.describe Greenhorn::Commerce::Product do
     context 'when the product type has variants enabled' do
       let!(:short_description) { Greenhorn::Craft::Field.create!(name: 'Short Description') }
       let!(:long_description) { Greenhorn::Craft::Field.create!(name: 'Long Description') }
-      let(:product_type) { Greenhorn::Commerce::ProductType.create!(name: 'Books', hasVariants: true, fields: %w(shortDescription longDescription)) }
+      let(:product_type) do
+        Greenhorn::Commerce::ProductType.create!(
+          name: 'Books',
+          hasVariants: true,
+          fields: %w(shortDescription longDescription)
+        )
+      end
       let!(:default_tax_category) { Greenhorn::Commerce::TaxCategory.create!(name: 'Default', default: true) }
 
       it 'creates and updates a record with fields' do

@@ -19,7 +19,8 @@ module Greenhorn
         # @option attrs [Boolean] hasUrls (false) Whether this product type's products have URLs
         # @option attrs [Boolean] hasDimensions (false) Whether this product type's products have dimensions
         # @option attrs [Boolean] hasVariants (false) Whether this product type's products have variants
-        # @option attrs [Boolean] hasVariantTitleField (false) Whether this product type's products' variants have their own titles
+        # @option attrs [Boolean] hasVariantTitleField (false) Whether this product type's products' variants
+        #   have their own titles
         # @option attrs [Array<Craft::Field>] fields ([]) The fields to associate with this product type
         # @return [ProductType]
         #
@@ -79,7 +80,8 @@ module Greenhorn
       # @option attrs [Boolean] hasUrls (false) Whether this product type's products have URLs
       # @option attrs [Boolean] hasDimensions (false) Whether this product type's products have dimensions
       # @option attrs [Boolean] hasVariants (false) Whether this product type's products have variants
-      # @option attrs [Boolean] hasVariantTitleField (false) Whether this product type's products' variants have their own titles
+      # @option attrs [Boolean] hasVariantTitleField (false) Whether this product type's products' variants
+      #   have their own titles
       # @option attrs [Array<Craft::Field>] fields ([]) The fields to associate with this product type
       # @return [ProductType]
       def update(attrs)

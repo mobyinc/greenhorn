@@ -22,7 +22,9 @@ RSpec.configure do |config|
       statements.each do |stmt|
         begin
           ActiveRecord::Base.connection.execute(stmt)
-        rescue Exception; end
+        rescue ActiveRecord::StatementInvalid
+          print ''
+        end
       end
     end
   end

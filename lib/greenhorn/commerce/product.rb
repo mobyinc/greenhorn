@@ -65,7 +65,12 @@ module Greenhorn
           default_variant_params[:sku] ||= attrs[:defaultSku]
           default_variant_params[:price] ||= attrs[:defaultPrice]
           default_variant_params[:stock] ||= 0
-          unlimited_stock = default_variant_params[:unlimitedStock].nil? ? true : default_variant_params[:unlimitedStock]
+          unlimited_stock =
+            if default_variant_params[:unlimitedStock].nil?
+              true
+            else
+              default_variant_params[:unlimitedStock]
+            end
           default_variant_params[:unlimitedStock] = from_boolean(unlimited_stock)
           default_variant_params[:product] = self
           attrs[:default_variant_attributes] = default_variant_params

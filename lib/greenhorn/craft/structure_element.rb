@@ -16,7 +16,7 @@ module Greenhorn
       end
 
       def parent
-        return nil if level == 0
+        return nil if level.zero?
         structure.structure_elements.where(level: level - 1).where("lft < #{lft} AND rgt > #{rgt}").first
       end
 

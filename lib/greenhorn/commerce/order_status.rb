@@ -14,7 +14,9 @@ module Greenhorn
         # @param attrs [Hash]
         # @option attrs [String] name
         # @option attrs [String] handle (inferred from name)
-        # @option attrs [String<'green','orange','red','blue','yellow','pink','purple','turquoise','light','grey','black'>] color ('green')
+        # @option attrs
+        #   [String<'green','orange','red','blue','yellow','pink','purple','turquoise','light','grey','black'>]
+        #   color ('green')
         # @option attrs [Integer] sortOrder
         # @option attrs [Boolean] default (false)
         # @return [OrderStatus]

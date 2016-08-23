@@ -5,6 +5,9 @@ AllCops:
 Metrics/LineLength:
   Max: 120
   Severity: refactor
+Metrics/ClassLength:
+  Max: 175
+  Severity: refactor
 Metrics/AbcSize:
   Max: 300
 Metrics/MethodLength:

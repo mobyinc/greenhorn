@@ -31,7 +31,8 @@ module Greenhorn
         end
       end
 
-      validates :paymentType, inclusion: { in: %w(authorize purchase), message: 'must be one of `authorize`, `purchase`' }
+      validates :paymentType,
+                inclusion: { in: %w(authorize purchase), message: 'must be one of `authorize`, `purchase`' }
 
       # Updates an existing payment method
       #
