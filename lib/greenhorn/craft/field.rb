@@ -4,6 +4,10 @@ module Greenhorn
   module Craft
     class Field < BaseModel
       class << self
+        def table
+          'fields'
+        end
+
         def allowed_types
           %w(
             PlainText
