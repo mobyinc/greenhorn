@@ -3,6 +3,8 @@ require 'greenhorn/craft/base_model'
 module Greenhorn
   module Craft
     class EntryType < BaseModel
+      include FieldBehaviors
+
       belongs_to :section, foreign_key: 'sectionId'
       belongs_to :field_layout, foreign_key: 'fieldLayoutId'
 
