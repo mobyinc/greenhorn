@@ -4,6 +4,10 @@ module Greenhorn
   module Craft
     class User < BaseModel
       class << self
+        def table
+          'users'
+        end
+
         # Creates a new user
         #
         # @param attrs [Hash]

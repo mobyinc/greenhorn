@@ -14,6 +14,8 @@ module Greenhorn
             end
           end
 
+          delegate :title, to: :content
+
           after_create { element.content = Content.new(@content_attrs) }
           after_update { element.content.update(@content_attrs) }
         end

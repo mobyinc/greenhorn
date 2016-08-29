@@ -3,7 +3,10 @@ require 'greenhorn/craft/base_model'
 module Greenhorn
   module Craft
     class ElementLocale < BaseModel
-      self.table_name = 'elements_i18n'
+      def self.table
+        'elements_i18n'
+      end
+
       belongs_to :element, foreign_key: 'elementId'
       before_save do
         section_locale = element.entry.try(:section).try(:section_locale)

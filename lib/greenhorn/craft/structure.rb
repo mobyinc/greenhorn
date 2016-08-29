@@ -3,6 +3,10 @@ require 'greenhorn/craft/base_model'
 module Greenhorn
   module Craft
     class Structure < BaseModel
+      def self.table
+        'structures'
+      end
+
       has_many :structure_elements, foreign_key: 'structureId'
 
       def root_element

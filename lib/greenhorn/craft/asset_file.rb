@@ -8,7 +8,9 @@ require 'greenhorn/craft/base_model'
 module Greenhorn
   module Craft
     class AssetFile < BaseModel
-      self.table_name = 'assetfiles'
+      def self.table
+        'assetfiles'
+      end
 
       belongs_to :element, foreign_key: 'id'
       belongs_to :asset_folder, foreign_key: 'folderId'
