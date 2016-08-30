@@ -4,19 +4,22 @@ require 'fog/aws'
 require 'fog/local'
 require 'fastimage'
 require 'greenhorn/craft/base_model'
+require 'greenhorn/craft/content_behaviors'
 
 module Greenhorn
   module Craft
     class AssetFile < BaseModel
+      def self.field_layout_association
+        :asset_source
+      end
+      include ContentBehaviors
+
       def self.table
         'assetfiles'
       end
 
-      belongs_to :element, foreign_key: 'id'
       belongs_to :asset_folder, foreign_key: 'folderId'
       belongs_to :asset_source, foreign_key: 'sourceId'
-      has_one :field_layout, through: :asset_source
-      has_one :content, through: :element
 
       delegate :title, to: :element
 
@@ -133,21 +136,9 @@ module Greenhorn
 
       def assign_attributes(attrs)
         attrs[:title] ||= attrs[:filename]
-        content_attrs = content_attributes_for(attrs)
-        attrs = non_content_attributes_for(attrs)
         attrs[:element] = element || Element.create!(type: 'Asset', slug: attrs[:filename])
 
-        if attrs[:element].content.present?
-          attrs[:element].content.update(content_attrs)
-        else
-          attrs[:element].content = Content.new(content_attrs)
-        end
-
         super(attrs)
-      end
-
-      def non_field_attrs
-        %i(file asset_source asset_folder title).concat(self.class.column_names.map(&:to_sym))
       end
     end
   end

@@ -9,7 +9,6 @@ module Greenhorn
 
       has_one :content, foreign_key: 'elementId'
       has_one :structure_element, foreign_key: 'elementId'
-      has_one :entry, foreign_key: 'id'
       has_many :element_locales, foreign_key: 'elementId'
       has_many :neo_blocks, foreign_key: 'ownerId', class_name: 'Neo::Block'
 
@@ -32,6 +31,13 @@ module Greenhorn
 
       def add_neo_block(attrs)
         neo_blocks.create!(attrs)
+      end
+
+      def item
+        case type
+        when 'Asset' then AssetFile.find(id)
+        when 'Entry' then Entry.find(id)
+        end
       end
     end
   end

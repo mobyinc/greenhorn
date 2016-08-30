@@ -8,15 +8,51 @@ module Greenhorn
           'fields'
         end
 
+        def field_info
+          {
+            PlainText: {
+              column_attrs: [:text],
+              default_settings: { placeholder: '', maxLength: '', multiline: '', initialRows: '4' }
+            },
+            RichText: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  configFig: '',
+                  availableAssetSources: '*',
+                  availableTransforms: '*',
+                  cleanupHtml: '1',
+                  purifyHtml: '1',
+                  columnType: 'text'
+                }
+            },
+            Number: { column_attrs: [:float], default_settings: { min: '0', max: '', decimals: '0' } },
+            Lightswitch: { column_attrs: [:boolean], default_settings: { default: '' } },
+            Assets: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  useSingleFolder: '1',
+                  sources: '*',
+                  defaultUploadLocationSource: '',
+                  defaultUploadLocationSubpath: '',
+                  singleUploadLocationSource: '',
+                  singleUploadLocationSubpath: '',
+                  restrictFiles: '0',
+                  allowedKinds: [],
+                  limit: '',
+                  viewMode: 'list',
+                  selectionLabel: ''
+                }
+            },
+            Matrix: { default_settings: { maxBlocks: nil } },
+            Neo: { default_settings: { maxBlocks: nil } },
+            Entries: { default_settings: { sources: [], limit: '', selectionLabel: '' } }
+          }.with_indifferent_access
+        end
+
         def allowed_types
-          %w(
-            PlainText
-            RichText
-            Number
-            Assets
-            Matrix
-            Neo
-          )
+          field_info.keys
         end
 
         def verify_field_type!(type)
@@ -25,57 +61,21 @@ module Greenhorn
           end
         end
 
-        def column_type_mapping
-          {
-            'PlainText' => :text,
-            'RichText' => :text,
-            'Number' => :integer
-          }
-        end
-
-        def column_type_for(type)
-          column_type_mapping[type]
+        def column_attrs_for(type)
+          column_attrs = field_info[type]['column_attrs']
+          column_attrs
         end
       end
 
       def default_settings_for(type)
-        case type
-        when 'PlainText'
-          { placeholder: '', maxLength: '', multiline: '', initialRows: '4' }
-        when 'RichText'
-          {
-            configFig: '',
-            availableAssetSources: '*',
-            availableTransforms: '*',
-            cleanupHtml: '1',
-            purifyHtml: '1',
-            columnType: 'text'
-          }
-        when 'Number'
-          { min: '0', max: '', decimals: '0' }
-        when 'Assets'
-          {
-            useSingleFolder: '1',
-            sources: '*',
-            defaultUploadLocationSource: '',
-            defaultUploadLocationSubpath: '',
-            singleUploadLocationSource: '',
-            singleUploadLocationSubpath: '',
-            restrictFiles: '0',
-            allowedKinds: [],
-            limit: '',
-            viewMode: 'list',
-            selectionLabel: ''
-          }
-        when 'Matrix', 'Neo'
-          { maxBlocks: nil }
-        end
+        self.class.field_info[type][:default_settings]
       end
 
       serialize :settings, JSON
       belongs_to :field_group, foreign_key: 'groupId'
       has_many :block_types, foreign_key: 'fieldId', class_name: 'MatrixBlockType'
       has_many :neo_block_types, foreign_key: 'fieldId', class_name: 'Neo::BlockType'
+      has_many :relations, foreign_key: 'fieldId'
 
       validate :handle_is_unique
 
@@ -85,6 +85,7 @@ module Greenhorn
       end
 
       after_create do
+        column_attrs = self.class.column_attrs_for(type)
         if type == 'Matrix'
           MatrixContent.add_table(handle)
           (@attrs[:block_types] || []).each do |block_type|
@@ -95,11 +96,9 @@ module Greenhorn
             neo_block_types.create!(block_type)
           end
         elsif part_of_matrix?
-          column_type = self.class.column_type_for(type)
-          MatrixContent.add_field_column(matrix_handle, matrix_field_handle, column_type)
-        else
-          column_type = self.class.column_type_for(type)
-          Content.add_field_column(handle, column_type) if column_type.present?
+          MatrixContent.add_field_column(matrix_handle, matrix_field_handle, *column_attrs)
+        elsif column_attrs.present?
+          Content.add_field_column(handle, *column_attrs)
         end
       end
 
@@ -124,8 +123,11 @@ module Greenhorn
       end
 
       def initialize(attrs)
+        attrs = attrs.with_indifferent_access
         @attrs = attrs
         type = attrs[:type] || 'PlainText'
+        self.class.verify_field_type!(type)
+
         default_settings = default_settings_for(type)
         attrs[:restrictFiles] = 1 if attrs[:allowedKinds].present?
         settings = default_settings.merge(attrs.slice(*default_settings.keys))
@@ -139,7 +141,6 @@ module Greenhorn
           settings[:singleUploadLocationSource] = single_upload_location_source.id.to_s
         end
 
-        self.class.verify_field_type!(type)
         attrs = {
           name: attrs[:name],
           handle: attrs[:handle],

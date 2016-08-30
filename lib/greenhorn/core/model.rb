@@ -59,15 +59,5 @@ module Greenhorn
       content_keys = content_attributes_for(attrs).keys
       attrs.reject { |key, _value| content_keys.include?(key) }
     end
-
-    # @!visibility private
-    def method_missing(method, *options)
-      if respond_to?(:field_layout) && field_layout.present? && respond_to?(:content)
-        method_matches_field = field_layout.field?(method)
-        method_matches_field ? content.field(method) : super
-      else
-        super
-      end
-    end
   end
 end

@@ -25,7 +25,7 @@ module Greenhorn
         section_locales << SectionLocale.create!(locale: 'en_us', section: self)
       end
 
-      def initialize(attrs)
+      def initialize(attrs = {})
         @fields = attrs.delete(:fields)
         super(attrs)
       end

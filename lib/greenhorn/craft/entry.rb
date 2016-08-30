@@ -1,4 +1,5 @@
 require 'greenhorn/craft/base_model'
+require 'greenhorn/craft/content_behaviors'
 
 module Greenhorn
   module Craft
@@ -27,7 +28,7 @@ module Greenhorn
       end
 
       def initialize(attrs)
-        require_attributes!(attrs)
+        require_attributes!(attrs, %i(title))
 
         if attrs[:parent].present?
           section = attrs[:parent].section
@@ -53,7 +54,7 @@ module Greenhorn
       end
 
       def assign_attributes(attrs)
-        self.section = attrs[:section]
+        self.section = attrs[:section] if attrs[:section].present?
         super(attrs)
       end
     end
