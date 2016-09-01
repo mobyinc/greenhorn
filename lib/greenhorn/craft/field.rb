@@ -132,6 +132,12 @@ module Greenhorn
         attrs[:restrictFiles] = 1 if attrs[:allowedKinds].present?
         settings = default_settings.merge(attrs.slice(*default_settings.keys))
 
+        if attrs[:sources].present?
+          settings[:sources] = attrs[:sources].map do |source_section|
+            "section:#{source_section.id}"
+          end
+        end
+
         default_upload_location_source = settings[:defaultUploadLocationSource]
         if default_upload_location_source.present? && !default_upload_location_source.is_a?(String)
           settings[:defaultUploadLocationSource] = default_upload_location_source.id.to_s
@@ -181,6 +187,20 @@ module Greenhorn
 
       def matrix?
         type == 'Matrix'
+      end
+
+      def ensure_valid_source!(item)
+        # TODO this currently only supports Sections, needs to be expanded to Categories, Assets, etc
+        sources = self.settings['sources'].map do |source_identifier|
+          if source_identifier.starts_with?('section:')
+            Section.find(source_identifier[8..-1])
+          end
+        end
+
+        return if sources.nil? || sources.include?(item.section)
+
+        raise Greenhorn::Errors::InvalidOperationError,
+          "Can't attach entry type #{item.section.name}, allowed entry types: #{sources.map(&:name).join(',')}"
       end
     end
   end

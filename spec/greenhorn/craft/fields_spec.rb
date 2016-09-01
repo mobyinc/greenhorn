@@ -97,16 +97,25 @@ RSpec.describe Greenhorn::Craft::Field do
 
   describe 'Entries field' do
     let(:ingredients) { Greenhorn::Craft::Section.create(name: 'Ingredients') }
-    let(:field) { Greenhorn::Craft::Field.create(name: 'Ingredients', type: 'Entries', sources: [ingredients]) }
     let(:cilantro) { Greenhorn::Craft::Entry.create(title: 'Cilantro', section: ingredients) }
     let(:cumin) { Greenhorn::Craft::Entry.create(title: 'Cumin', section: ingredients) }
     let(:parsley) { Greenhorn::Craft::Entry.create(title: 'Parsley', section: ingredients) }
+    let(:spatula) { Greenhorn::Craft::Entry.create(title: 'Spatula', section: Greenhorn::Craft::Section.create(name: 'Tools')) }
+    let(:field) { Greenhorn::Craft::Field.create(name: 'Ingredients', type: 'Entries', sources: [ingredients]) }
     let(:field_values) { { ingredients: [cilantro, cumin] } }
 
     it 'saves and updates' do
       expect(entry.reload.ingredients).to match_array([cilantro, cumin])
       entry.update(ingredients: [parsley, cumin])
       expect(entry.reload.ingredients).to match_array([parsley, cumin])
+    end
+
+    context 'when trying to associate a non-permitted entry type' do
+      let(:field_values) { { ingredients: [cilantro, spatula] } }
+
+      it 'raises an error' do
+        expect { entry.reload }.to raise_error(Greenhorn::Errors::InvalidOperationError, "Can't attach entry type Tools, allowed entry types: Ingredients")
+      end
     end
   end
 end

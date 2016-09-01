@@ -87,6 +87,7 @@ module Greenhorn
 
           values = [values] unless values.is_a?(Array)
           values.each do |value|
+            field.ensure_valid_source!(value)
             Greenhorn::Craft::Relation.create!(field: field, source: element, target: value.element)
           end
         end
