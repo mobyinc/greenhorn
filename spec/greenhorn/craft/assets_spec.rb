@@ -21,6 +21,14 @@ RSpec.describe Greenhorn::Craft::AssetFile do
   end
 
   describe 'create and update' do
+    context 'with bad file' do
+      it 'raises an error' do
+        expect do
+          described_class.create!(file: 'blah', asset_folder: local_source.asset_folder)
+        end.to raise_error(Greenhorn::Errors::InvalidFileError, 'Invalid URL `blah`')
+      end
+    end
+
     context 'with local storage' do
       let(:test_image) { 'https://homepages.cae.wisc.edu/~ece533/images/boat.png' }
 

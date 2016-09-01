@@ -75,7 +75,16 @@ module Greenhorn
           end
 
         begin
-          body = File.exist?(@file) ? File.read(@file) : HTTParty.get(@file, uri_adapter: Addressable::URI).to_s
+          body =
+            if File.exist?(@file)
+              File.read(@file)
+            else
+              uri = Addressable::URI.parse(@file)
+              if uri.host.nil?
+                raise Errors::InvalidFileError, "Invalid URL `#{@file}`"
+              end
+              HTTParty.get(@file, uri_adapter: Addressable::URI).to_s
+            end
         rescue URI::InvalidURIError
           raise Errors::InvalidFileError, "Invalid file `#{@file}`: file must either be a local path or a URL"
         end
