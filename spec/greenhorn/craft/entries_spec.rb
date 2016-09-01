@@ -28,4 +28,22 @@ RSpec.describe Greenhorn::Craft::Entry do
     expect(entry.shortDescription).to eq('delicious')
     expect(entry.longDescription).to eq('super delicious')
   end
+
+  it 'finds by field' do
+    short_description = Greenhorn::Craft::Field.create!(name: 'Short Description')
+    long_description = Greenhorn::Craft::Field.create!(name: 'Long Description')
+    section = Greenhorn::Craft::Section.create(name: 'Recipes', fields: [short_description, long_description])
+    entry = described_class.create!(
+      section: section,
+      title: 'Enchiladas',
+      shortDescription: 'delicious',
+      longDescription: 'super delicious'
+    )
+
+    expect(described_class.find_by(section: section)).to eq(entry)
+    expect(described_class.find_by(section: section, shortDescription: 'delicious')).to eq(entry)
+    expect(described_class.find_by(section: section, longDescription: 'super delicious')).to eq(entry)
+    expect(described_class.find_by(section: section, shortDescription: 'delicious', longDescription: 'super delicious')).to eq(entry)
+    expect(described_class.find_by(section: section, shortDescription: 'blah')).to be_nil
+  end
 end

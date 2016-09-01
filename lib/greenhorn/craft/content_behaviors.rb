@@ -3,6 +3,8 @@ module Greenhorn
     module ContentBehaviors
       def self.included(base)
         base.class_eval do
+          base.extend(ClassMethods)
+
           belongs_to :element, foreign_key: 'id', class_name: 'Craft::Element'
           has_one :element_locale, through: :element
           has_one :content, through: :element, class_name: 'Craft::Content'
@@ -59,6 +61,28 @@ module Greenhorn
           method_matches_field ? content.field(method) : super
         else
           super
+        end
+      end
+
+      def fields_match?(fields)
+        fields.all? do |field, value|
+          self.send(field) == value
+        end
+      end
+
+      module ClassMethods
+        def find_by(options)
+          if options[:section].present?
+            field_matches = options.slice(*options[:section].field_handles.map(&:to_sym))
+            field_matches.keys.each { |field_handle| options.delete(field_handle) }
+
+            results = where(options)
+            results.to_a.find do |result|
+              result.fields_match?(field_matches)
+            end
+          else
+            super(options)
+          end
         end
       end
     end

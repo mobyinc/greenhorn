@@ -4,6 +4,8 @@ module Greenhorn
       def self.included(base)
         base.class_eval do
           belongs_to :field_layout, class_name: 'Greenhorn::Craft::FieldLayout', foreign_key: 'fieldLayoutId'
+          has_many :attached_fields, through: :field_layout
+          has_many :fields, through: :attached_fields
 
           delegate :field?, to: :field_layout
           delegate :add_field, to: :field_layout
@@ -25,14 +27,17 @@ module Greenhorn
         super(attrs)
       end
 
-      def verify_fields_attached!(field_handles)
-        field_handles = field_handles.map(&:to_s)
-        attached_field_handles = field_layout.attached_fields.map(&:field).map(&:handle)
-        field_handles.each do |field_handle|
-          unless attached_field_handles.include?(field_handle)
-            raise Greenhorn::Errors::InvalidOperationError, "Field `#{field_handle}` not attached to this resource"
+      def verify_fields_attached!(handles)
+        handles = field_handles.map(&:to_s)
+        handles.each do |handle|
+          unless field_handles.include?(handle)
+            raise Greenhorn::Errors::InvalidOperationError, "Field `#{handle}` not attached to this resource"
           end
         end
+      end
+
+      def field_handles
+        fields.map(&:handle)
       end
     end
   end

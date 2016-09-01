@@ -13,6 +13,8 @@ module Greenhorn
       has_many :section_locales, foreign_key: 'sectionId', class_name: 'SectionLocale'
       belongs_to :structure, foreign_key: 'structureId'
 
+      delegate :field_handles, to: :entry_type
+
       before_create do
         self.handle = Utility::Handle.new(name) unless handle.present?
         self.structure = Structure.create!
