@@ -30,6 +30,11 @@ module Greenhorn
 
         def add_table(handle)
           table_name = content_table_name(handle)
+          if ActiveRecord::Base.connection.table_exists?(table_name)
+            puts "Matrix table #{table_name} already exists, not re-creating..."
+            return
+          end
+
           ActiveRecord::Migration.class_eval do
             create_table(table_name) do |t|
               t.integer :elementId
@@ -52,6 +57,12 @@ module Greenhorn
         def add_field_column(matrix_handle, field_handle, column_type)
           table_name = content_table_name(matrix_handle)
           column_name = "field_#{field_handle}"
+
+          if self.model_class_for(matrix_handle).column_names.include?(column_name)
+            puts "Matrix column #{column_name} already exists, not re-creating..."
+            return
+          end
+
           ActiveRecord::Migration.class_eval do
             add_column(table_name, column_name, column_type, after: :locale)
           end
@@ -70,6 +81,31 @@ module Greenhorn
           options[:locale] = 'en_us'
           model_class.create!(options)
         end
+      end
+
+      def field_values
+        handle = block.type.handle
+        values = { type: handle }
+        attributes
+          .select { |attribute, value| attribute.starts_with?("field_#{handle}") }
+          .each { |attribute, value| values[attribute.sub("field_#{handle}_", '').to_sym] = value }
+        values
+      end
+
+      def handle
+        self.class.name[14..-1]
+      end
+
+      def field
+        Field.find_by(handle: handle)
+      end
+
+      def block
+        MatrixBlock.find(element.id)
+      end
+
+      def block_types
+        field.block_types
       end
     end
   end

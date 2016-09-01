@@ -15,7 +15,7 @@ module Greenhorn
         field_layout = FieldLayout.create!(type: 'MatrixBlock')
         @attrs[:fields].each do |field|
           field = Field.create!(field.merge(context: "matrixBlockType:#{id}"))
-          field_layout.attach_field(field)
+          field_layout.add_field(field)
         end
         update(field_layout: field_layout)
       end

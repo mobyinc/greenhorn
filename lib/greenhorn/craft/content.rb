@@ -41,15 +41,17 @@ module Greenhorn
       belongs_to :element, foreign_key: 'elementId'
 
       after_save do
-        @matrix_fields.each do |matrix_handle, block_groups|
-          block_groups.each do |block_group|
-            block_group.each do |block_handle, fields|
-              attrs = { element: element, matrix_handle: matrix_handle, block_handle: block_handle }
-              fields.each do |field_handle, value|
-                attrs["field_#{block_handle}_#{field_handle}"] = value
-              end
-              MatrixContent.create(attrs)
+        @matrix_fields.each do |matrix_handle, blocks|
+          field = Greenhorn::Craft::Field.find_by(handle: matrix_handle)
+          clear_field(field)
+
+          blocks.each do |block|
+            block_handle = block.delete(:type)
+            attrs = { element: element, matrix_handle: matrix_handle, block_handle: block_handle }
+            block.each do |field_handle, value|
+              attrs["field_#{block_handle}_#{field_handle}"] = value
             end
+            MatrixContent.create(attrs)
           end
         end
 
@@ -60,7 +62,7 @@ module Greenhorn
           upload_subpath = field.settings['singleUploadLocationSubpath']
           folder = upload_subpath.present? ? AssetFolder.find_by(path: upload_subpath) : asset_source.asset_folder
 
-          clear_field_relations(field)
+          clear_field(field)
 
           value = [value] unless value.is_a?(Array)
           value.each do |file_attributes|
@@ -83,7 +85,7 @@ module Greenhorn
 
         @category_fields.merge(@entry_fields).each do |handle, values|
           field = Greenhorn::Craft::Field.find_by(handle: handle)
-          clear_field_relations(field)
+          clear_field(field)
 
           values = [values] unless values.is_a?(Array)
           values.each do |value|
@@ -94,18 +96,23 @@ module Greenhorn
       end
 
       def assign_attributes(attrs)
-        @matrix_fields = {}
-
         field_attrs = attrs.reject { |key, _value| %i(title).include?(key.to_sym) }
 
         grouped_attrs = field_attrs.group_by do |field_handle, _value|
-          Greenhorn::Craft::Field.find_by(handle: field_handle).type
+          field = Greenhorn::Craft::Field.find_by(handle: field_handle)
+          if field.nil?
+            raise Greenhorn::Errors::InvalidOperationError,
+              "Field `#{field_handle}` not found"
+          end
+          field.type
         end
+        @matrix_fields = (grouped_attrs['Matrix'] || []).to_h
         @asset_fields = (grouped_attrs['Assets'] || []).to_h
         @category_fields = (grouped_attrs['Categories'] || []).to_h
         @entry_fields = (grouped_attrs['Entries'] || []).to_h
         regular_fields = field_attrs.reject do |field_handle, _value|
           @asset_fields.keys.include?(field_handle) ||
+            @matrix_fields.keys.include?(field_handle) ||
             @category_fields.keys.include?(field_handle) ||
             @entry_fields.keys.include?(field_handle)
         end
@@ -115,12 +122,7 @@ module Greenhorn
         field_attrs.each do |field_handle, value|
           next if %i(title).include?(field_handle)
           handle = field_handle.split('field_').last
-
           field = Field.find_by(handle: handle)
-          if field.matrix?
-            @matrix_fields[handle] = value
-            field_attrs.delete(field_handle)
-          end
         end
 
         field_attrs[:title] = attrs[:title] if attrs[:title].present?
@@ -134,6 +136,10 @@ module Greenhorn
 
         field = Field.find_by(handle: handle)
         case field.type
+        when 'Matrix'
+          content = MatrixContent.model_class_for(handle)
+          blocks = element.matrix_blocks.where(field: field)
+          blocks.map(&:content_attributes)
         when 'Assets', 'Entries'
           field.relations.where(source: element).map(&:target).map(&:item)
         end
@@ -141,9 +147,14 @@ module Greenhorn
 
       private
 
-      def clear_field_relations(field)
-        current_relations = Craft::Relation.where(field: field, source: element)
-        current_relations.destroy_all
+      def clear_field(field)
+        case field.type
+        when 'Matrix'
+          MatrixBlock.where(owner: element, field: field).destroy_all
+        when 'Assets', 'Entries', 'Categories'
+          current_relations = Craft::Relation.where(field: field, source: element)
+          current_relations.destroy_all
+        end
       end
     end
   end

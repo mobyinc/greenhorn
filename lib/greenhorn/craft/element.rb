@@ -10,6 +10,7 @@ module Greenhorn
       has_one :content, foreign_key: 'elementId'
       has_one :structure_element, foreign_key: 'elementId'
       has_many :element_locales, foreign_key: 'elementId'
+      has_many :matrix_blocks, foreign_key: 'ownerId', class_name: 'MatrixBlock'
       has_many :neo_blocks, foreign_key: 'ownerId', class_name: 'Neo::Block'
 
       delegate :slug, to: :element_locale, allow_nil: true

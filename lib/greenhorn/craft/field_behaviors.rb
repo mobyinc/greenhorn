@@ -4,8 +4,8 @@ module Greenhorn
       def self.included(base)
         base.class_eval do
           belongs_to :field_layout, class_name: 'Greenhorn::Craft::FieldLayout', foreign_key: 'fieldLayoutId'
-          has_many :attached_fields, through: :field_layout
-          has_many :fields, through: :attached_fields
+          has_many :attached_fields, through: :field_layout, class_name: 'Greenhorn::Craft::FieldLayoutField'
+          has_many :fields, through: :attached_fields, class_name: 'Greenhorn::Craft::Field'
 
           delegate :field?, to: :field_layout
           delegate :add_field, to: :field_layout

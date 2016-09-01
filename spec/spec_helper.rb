@@ -1,6 +1,7 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'database_cleaner'
 require 'greenhorn'
+require 'rake'
 
 connection = Greenhorn::Connection.new(
   prefix: 'craft',

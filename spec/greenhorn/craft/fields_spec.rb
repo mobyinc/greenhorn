@@ -118,4 +118,46 @@ RSpec.describe Greenhorn::Craft::Field do
       end
     end
   end
+
+  describe 'Matrix field' do
+    let(:field) do
+      Greenhorn::Craft::Field.create(
+        name: 'Books',
+        type: 'Matrix',
+        block_types: [
+          {
+            name: 'Author',
+            fields: [
+              { name: 'Name' },
+              { name: 'Phone', type: 'Number' }
+            ]
+          }, {
+            name: 'Translator',
+            fields: [
+              { name: 'Name' },
+              { name: 'Phone', type: 'Number' }
+            ]
+          }
+        ]
+      )
+    end
+    let(:books) do
+      [
+        { type: 'author', name: 'Herman Melville', phone: 123456 },
+        { type: 'translator', name: 'Mr Translator', phone: 654321 },
+        { type: 'author', name: 'Jane Austen', phone: 555123 }
+      ]
+    end
+    let(:field_values) { { books: books } }
+
+    it 'saves and updates' do
+      expect(entry.reload.books).to match_array([
+        { type: 'author', name: 'Herman Melville', phone: 123456 },
+        { type: 'translator', name: 'Mr Translator', phone: 654321 },
+        { type: 'author', name: 'Jane Austen', phone: 555123 }
+      ])
+      entry.update(books: [{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
+      expect(entry.reload.books).to match_array([{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
+    end
+  end
 end
