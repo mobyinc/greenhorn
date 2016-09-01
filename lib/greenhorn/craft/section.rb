@@ -14,7 +14,7 @@ module Greenhorn
       belongs_to :structure, foreign_key: 'structureId'
 
       before_create do
-        self.handle = Utility::Slug.new(name) unless handle.present?
+        self.handle = Utility::Handle.new(name) unless handle.present?
         self.structure = Structure.create!
       end
 
@@ -25,7 +25,12 @@ module Greenhorn
         section_locales << SectionLocale.create!(locale: 'en_us', section: self)
       end
 
-      def initialize(attrs = {})
+      def initialize(attrs)
+        require_attributes!(attrs, %i(name))
+        super(attrs)
+      end
+
+      def assign_attributes(attrs = {})
         @fields = attrs.delete(:fields)
         super(attrs)
       end
