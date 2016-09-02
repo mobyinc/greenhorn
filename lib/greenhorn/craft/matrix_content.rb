@@ -8,11 +8,12 @@ module Greenhorn
       belongs_to :element, foreign_key: 'elementId'
 
       class << self
-        def define_models
-          return
-          Field.where(type: 'Matrix').each do |matrix_field|
-            model_class = model_class_for(matrix_field.handle)
-          end
+        def handle
+          name.sub('MatrixContent_', '')
+        end
+
+        def table
+          "matrixcontent_#{handle}"
         end
 
         def model_class_for(handle)

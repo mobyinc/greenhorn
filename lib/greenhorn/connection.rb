@@ -23,8 +23,6 @@ module Greenhorn
       @connection = ActiveRecord::Base.establish_connection(
         options.merge(adapter: 'mysql2')
       )
-
-      Greenhorn::Craft::MatrixContent.define_models
     end
 
     def transaction(&process)
