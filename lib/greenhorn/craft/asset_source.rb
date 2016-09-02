@@ -16,12 +16,12 @@ module Greenhorn
           when 'S3'
             { subfolder: '', publicUrls: '0', urlPrefix: '', expires: '' }
           when 'Local'
-            { publicUrls: '1' }
+            { publicUrls: '0' }
           end
         end
       end
 
-      SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location path).freeze
+      SETTINGS_ATTRS = %i(keyId secret bucket subfolder publicUrls urlPrefix expires location path url).freeze
 
       belongs_to :field_layout, foreign_key: 'fieldLayoutId'
       has_one :asset_folder, foreign_key: 'sourceId' # TODO: this should be has_many
@@ -73,7 +73,7 @@ module Greenhorn
       end
 
       def url_prefix_is_valid
-        if settings['publicUrls'] && !settings['urlPrefix']
+        if settings['publicUrls'] && !(settings['urlPrefix'] || settings['url'])
           errors.add(:base, '`urlPrefix` required if `publicUrls = true`')
         end
       end

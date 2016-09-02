@@ -14,8 +14,38 @@ module Greenhorn
       end
       include ContentBehaviors
 
-      def self.table
-        'assetfiles'
+      class << self
+        def table
+          'assetfiles'
+        end
+
+        def file_contents_for(uri)
+          if File.exist?(uri)
+            File.read(uri)
+          else
+            uri = Addressable::URI.parse(uri)
+            if uri.host.nil?
+              raise Errors::InvalidFileError, "Invalid URL `#{uri}`"
+            end
+            HTTParty.get(uri, uri_adapter: Addressable::URI).to_s
+          end
+        rescue URI::InvalidURIError
+          raise Errors::InvalidFileError, "Invalid file `#{uri}`: file must either be a local path or a URL"
+        end
+
+        def file_size_for(uri)
+          file_contents_for(uri).size
+        end
+
+        def filename_for(uri)
+          uri.split('/').last
+        end
+
+        def existing_file_for(uri)
+          matching_filename = find_by(filename: filename_for(uri))
+          return nil unless matching_filename.present? && matching_filename.size == file_size_for(uri)
+          matching_filename
+        end
       end
 
       belongs_to :asset_folder, foreign_key: 'folderId'
@@ -74,24 +104,9 @@ module Greenhorn
             {}
           end
 
-        begin
-          body =
-            if File.exist?(@file)
-              File.read(@file)
-            else
-              uri = Addressable::URI.parse(@file)
-              if uri.host.nil?
-                raise Errors::InvalidFileError, "Invalid URL `#{@file}`"
-              end
-              HTTParty.get(@file, uri_adapter: Addressable::URI).to_s
-            end
-        rescue URI::InvalidURIError
-          raise Errors::InvalidFileError, "Invalid file `#{@file}`: file must either be a local path or a URL"
-        end
-
         file = dir.files.create(
           key: "#{asset_source.settings['subfolder']}/#{filename}",
-          body: body,
+          body: self.class.file_contents_for(@file),
           public: true,
           metadata: cache_headers
         )
@@ -120,7 +135,7 @@ module Greenhorn
         require_attributes!(attrs, %i(file asset_folder))
 
         @file = attrs[:file]
-        attrs[:filename] ||= @file.split('/').last
+        attrs[:filename] ||= self.class.filename_for(@file)
         attrs[:asset_source] = attrs[:asset_folder].try(:asset_source)
 
         extension = attrs[:filename].split('.').last

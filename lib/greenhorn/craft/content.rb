@@ -57,12 +57,12 @@ module Greenhorn
 
         @asset_fields.each do |handle, value|
           field = Greenhorn::Craft::Field.find_by(handle: handle)
+          clear_field(field)
+
           asset_source = Greenhorn::Craft::AssetSource.find(field.settings['defaultUploadLocationSource'].to_i)
 
           upload_subpath = field.settings['singleUploadLocationSubpath']
           folder = upload_subpath.present? ? AssetFolder.find_by(path: upload_subpath) : asset_source.asset_folder
-
-          clear_field(field)
 
           value = [value] unless value.is_a?(Array)
           value.each do |file_attributes|
@@ -72,12 +72,13 @@ module Greenhorn
                 file_attributes
               else
                 file_attributes = { 'url' => file_attributes } unless file_attributes.is_a?(Hash)
-                Greenhorn::Craft::AssetFile.create!(
-                  file: file_attributes['url'],
-                  title: file_attributes['title'],
-                  asset_source: asset_source,
-                  asset_folder: folder
-                )
+                Greenhorn::Craft::AssetFile.existing_file_for(file_attributes['url']) ||
+                  Greenhorn::Craft::AssetFile.create!(
+                    file: file_attributes['url'],
+                    title: file_attributes['title'],
+                    asset_source: asset_source,
+                    asset_folder: folder
+                  )
               end
             Greenhorn::Craft::Relation.create!(field: field, source: element, target: asset_file.element)
           end
