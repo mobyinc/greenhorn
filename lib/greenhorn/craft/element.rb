@@ -38,6 +38,7 @@ module Greenhorn
         case type
         when 'Asset' then AssetFile.find(id)
         when 'Entry' then Entry.find(id)
+        when 'Category' then Category.find(id)
         end
       end
     end

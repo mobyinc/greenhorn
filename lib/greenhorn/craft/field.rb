@@ -47,7 +47,8 @@ module Greenhorn
             },
             Matrix: { default_settings: { maxBlocks: nil } },
             Neo: { default_settings: { maxBlocks: nil } },
-            Entries: { default_settings: { sources: [], limit: '', selectionLabel: '' } }
+            Entries: { default_settings: { sources: [], limit: '', selectionLabel: '' } },
+            Categories: { default_settings: { source: nil, limit: '', selectionLabel: '', targetLocale: '' } }
           }.with_indifferent_access
         end
 
@@ -78,6 +79,7 @@ module Greenhorn
       has_many :relations, foreign_key: 'fieldId'
 
       validate :handle_is_unique
+      validate :sources_are_valid
 
       before_create do
         self.handle = Utility::Handle.new(name) unless handle.present?
@@ -138,6 +140,10 @@ module Greenhorn
           end
         end
 
+        if attrs[:source].present?
+          settings[:source] = "group:#{attrs[:source].id}"
+        end
+
         default_upload_location_source = settings[:defaultUploadLocationSource]
         if default_upload_location_source.present? && !default_upload_location_source.is_a?(String)
           settings[:defaultUploadLocationSource] = default_upload_location_source.id.to_s
@@ -190,17 +196,29 @@ module Greenhorn
       end
 
       def ensure_valid_source!(item)
-        # TODO this currently only supports Sections, needs to be expanded to Categories, Assets, etc
-        sources = self.settings['sources'].map do |source_identifier|
-          if source_identifier.starts_with?('section:')
+        if type == 'Entries'
+          sources = settings['sources'].map do |source_identifier|
             Section.find(source_identifier[8..-1])
           end
+          return if sources.nil? || sources.include?(item.section)
+
+          raise Greenhorn::Errors::InvalidOperationError,
+            "Can't attach entry type #{item.section.name}, allowed entry types: #{sources.map(&:name).join(',')}"
+        elsif type == 'Categories'
+          source = CategoryGroup.find(settings['source'][6..-1])
+          return if source == item.category_group
+
+          raise Greenhorn::Errors::InvalidOperationError,
+            "Can't attach category group #{item.category_group.name}, allowed group: #{source.name}"
+        elsif type == 'Assets'
+          # TODO
         end
+      end
 
-        return if sources.nil? || sources.include?(item.section)
+      private
 
-        raise Greenhorn::Errors::InvalidOperationError,
-          "Can't attach entry type #{item.section.name}, allowed entry types: #{sources.map(&:name).join(',')}"
+      def sources_are_valid
+        errors.add(:base, "Source must be specified") if type == 'Categories' && settings['source'].nil?
       end
     end
   end

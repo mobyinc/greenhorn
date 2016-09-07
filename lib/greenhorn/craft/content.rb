@@ -141,7 +141,7 @@ module Greenhorn
           content = MatrixContent.model_class_for(handle)
           blocks = element.matrix_blocks.where(field: field)
           blocks.map(&:content_attributes)
-        when 'Assets', 'Entries'
+        when 'Assets', 'Entries', 'Categories'
           field.relations.where(source: element).map(&:target).map(&:item)
         end
       end

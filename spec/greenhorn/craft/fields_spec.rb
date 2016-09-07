@@ -119,6 +119,35 @@ RSpec.describe Greenhorn::Craft::Field do
     end
   end
 
+  describe 'Categories field' do
+    let(:ingredients) { Greenhorn::Craft::Section.create(name: 'Ingredients') }
+    let(:cat_group) { Greenhorn::Craft::CategoryGroup.create(name: 'Categories') }
+    let(:cat_group2) { Greenhorn::Craft::CategoryGroup.create(name: 'More Categories') }
+    let(:cat1) { Greenhorn::Craft::Category.create(title: 'Cat 1', category_group: cat_group) }
+    let(:cat2) { Greenhorn::Craft::Category.create(title: 'Cat 2', category_group: cat_group) }
+    let(:cat3) { Greenhorn::Craft::Category.create(title: 'Cat 2', category_group: cat_group) }
+    let(:other_cat) { Greenhorn::Craft::Category.create(title: 'Other Cat', category_group: cat_group2) }
+    let(:field) { Greenhorn::Craft::Field.create!(name: 'Types', type: 'Categories', source: cat_group) }
+    let(:field_values) { { types: [cat1, cat2] } }
+
+    it 'saves and updates' do
+      expect(entry.reload.types).to match_array([cat1, cat2])
+      entry.update(types: [cat1, cat3])
+      expect(entry.reload.types).to match_array([cat1, cat3])
+    end
+
+    context 'when trying to associate a non-permitted entry type' do
+      let(:field_values) { { types: [cat1, other_cat] } }
+
+      it 'raises an error' do
+        expect { entry.reload }.to raise_error(
+          Greenhorn::Errors::InvalidOperationError,
+          "Can't attach category group More Categories, allowed group: Categories"
+        )
+      end
+    end
+  end
+
   describe 'Matrix field' do
     let(:field) do
       Greenhorn::Craft::Field.create(
