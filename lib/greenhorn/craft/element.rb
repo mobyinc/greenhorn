@@ -39,6 +39,7 @@ module Greenhorn
         when 'Asset' then AssetFile.find(id)
         when 'Entry' then Entry.find(id)
         when 'Category' then Category.find(id)
+        when 'Commerce_Product' then Commerce::Product.find(id)
         end
       end
     end

@@ -84,7 +84,7 @@ module Greenhorn
           end
         end
 
-        @category_fields.merge(@entry_fields).each do |handle, values|
+        @category_fields.merge(@entry_fields).merge(@product_fields).each do |handle, values|
           field = Greenhorn::Craft::Field.find_by(handle: handle)
           clear_field(field)
 
@@ -111,11 +111,13 @@ module Greenhorn
         @asset_fields = (grouped_attrs['Assets'] || []).to_h
         @category_fields = (grouped_attrs['Categories'] || []).to_h
         @entry_fields = (grouped_attrs['Entries'] || []).to_h
+        @product_fields = (grouped_attrs['Commerce_Products'] || []).to_h
         regular_fields = field_attrs.reject do |field_handle, _value|
           @asset_fields.keys.include?(field_handle) ||
             @matrix_fields.keys.include?(field_handle) ||
             @category_fields.keys.include?(field_handle) ||
-            @entry_fields.keys.include?(field_handle)
+            @entry_fields.keys.include?(field_handle) ||
+            @product_fields.keys.include?(field_handle)
         end
 
         field_attrs.each { |key, _value| attrs.delete(key) }
@@ -141,7 +143,7 @@ module Greenhorn
           content = MatrixContent.model_class_for(handle)
           blocks = element.matrix_blocks.where(field: field)
           blocks.map(&:content_attributes)
-        when 'Assets', 'Entries', 'Categories'
+        when 'Assets', 'Entries', 'Categories', 'Commerce_Products'
           field.relations.where(source: element).map(&:target).map(&:item)
         end
       end
@@ -152,7 +154,7 @@ module Greenhorn
         case field.type
         when 'Matrix'
           MatrixBlock.where(owner: element, field: field).destroy_all
-        when 'Assets', 'Entries', 'Categories'
+        when 'Assets', 'Entries', 'Categories', 'Commerce_Products'
           current_relations = Craft::Relation.where(field: field, source: element)
           current_relations.destroy_all
         end

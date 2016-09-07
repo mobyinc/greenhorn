@@ -120,7 +120,6 @@ RSpec.describe Greenhorn::Craft::Field do
   end
 
   describe 'Categories field' do
-    let(:ingredients) { Greenhorn::Craft::Section.create(name: 'Ingredients') }
     let(:cat_group) { Greenhorn::Craft::CategoryGroup.create(name: 'Categories') }
     let(:cat_group2) { Greenhorn::Craft::CategoryGroup.create(name: 'More Categories') }
     let(:cat1) { Greenhorn::Craft::Category.create(title: 'Cat 1', category_group: cat_group) }
@@ -145,6 +144,21 @@ RSpec.describe Greenhorn::Craft::Field do
           "Can't attach category group More Categories, allowed group: Categories"
         )
       end
+    end
+  end
+
+  describe 'Commerce_Products field' do
+    let(:type) { Greenhorn::Commerce::ProductType.create!(name: 'Products') }
+    let(:prod1) { Greenhorn::Commerce::Product.create(title: 'Product 1', defaultSku: '1', defaultPrice: 1, type: type) }
+    let(:prod2) { Greenhorn::Commerce::Product.create(title: 'Product 2', defaultSku: '2', defaultPrice: 1, type: type) }
+    let(:prod3) { Greenhorn::Commerce::Product.create(title: 'Product 3', defaultSku: '3', defaultPrice: 1, type: type) }
+    let(:field) { Greenhorn::Craft::Field.create!(name: 'Products', type: 'Commerce_Products') }
+    let(:field_values) { { products: [prod1, prod2] } }
+
+    it 'saves and updates' do
+      expect(entry.reload.products).to match_array([prod1, prod2])
+      entry.update(products: [prod1, prod3])
+      expect(entry.reload.products).to match_array([prod1, prod3])
     end
   end
 

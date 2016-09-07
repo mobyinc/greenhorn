@@ -48,7 +48,8 @@ module Greenhorn
             Matrix: { default_settings: { maxBlocks: nil } },
             Neo: { default_settings: { maxBlocks: nil } },
             Entries: { default_settings: { sources: [], limit: '', selectionLabel: '' } },
-            Categories: { default_settings: { source: nil, limit: '', selectionLabel: '', targetLocale: '' } }
+            Categories: { default_settings: { source: nil, limit: '', selectionLabel: '', targetLocale: '' } },
+            Commerce_Products: { default_settings: { sources: '*', limit: '', selectionLabel: '', targetLocale: '' } }
           }.with_indifferent_access
         end
 
