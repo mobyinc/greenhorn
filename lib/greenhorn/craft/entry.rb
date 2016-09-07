@@ -44,6 +44,7 @@ module Greenhorn
         attrs[:element] = Element.create!(
           slug: slug,
           type: 'Entry',
+          content: Content.new(title: attrs[:title]),
           structure_element: StructureElement.create!(parent: parent_element)
         )
         attrs[:authorId] = 1

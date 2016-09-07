@@ -3,10 +3,10 @@ require 'greenhorn/craft/base_model'
 module Greenhorn
   module Craft
     class Category < BaseModel
+      include Craft::ContentBehaviors
+
       belongs_to :category_group, foreign_key: 'groupId'
-      belongs_to :element, foreign_key: 'id'
       validates :category_group, presence: true
-      has_one :structure_element, through: :element
 
       class << self
         def self.table
@@ -41,6 +41,10 @@ module Greenhorn
         attrs.delete(:parent)
         attrs[:id] = element.id
         super(attrs)
+      end
+
+      def locales
+        element_locales.map(&:source_locale)
       end
     end
   end

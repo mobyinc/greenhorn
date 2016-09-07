@@ -6,8 +6,9 @@ module Greenhorn
           base.extend(ClassMethods)
 
           belongs_to :element, foreign_key: 'id', class_name: 'Craft::Element'
-          has_one :element_locale, through: :element
-          has_one :content, through: :element, class_name: 'Craft::Content'
+          has_one :structure_element, through: :element
+          has_many :element_locales, through: :element
+          has_many :contents, through: :element, class_name: 'Craft::Content'
           if respond_to?(:field_layout_association)
             has_one :field_layout, through: field_layout_association, class_name: 'Craft::FieldLayout'
           else
@@ -16,10 +17,17 @@ module Greenhorn
             end
           end
 
+          delegate :content, to: :element
           delegate :title, to: :content
 
-          after_create { element.content = Content.new(@content_attrs) }
-          after_update { element.content.update(@content_attrs) }
+          after_create do
+            Locale.all.map do |locale|
+              content = Content.find_or_create_by!(element: element, locale: locale.locale)
+              @content_attrs[:title] = title if @content_attrs[:title].nil?
+              content.update(@content_attrs.merge(element: element, locale: locale.locale))
+            end
+          end
+          after_update { element.content.update(@content_attrs.merge(element: element)) }
         end
       end
 

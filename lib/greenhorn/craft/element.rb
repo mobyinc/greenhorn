@@ -7,7 +7,7 @@ module Greenhorn
         'elements'
       end
 
-      has_one :content, foreign_key: 'elementId'
+      has_many :contents, foreign_key: 'elementId'
       has_one :structure_element, foreign_key: 'elementId'
       has_many :element_locales, foreign_key: 'elementId'
       has_many :matrix_blocks, foreign_key: 'ownerId', class_name: 'MatrixBlock'
@@ -17,15 +17,21 @@ module Greenhorn
       delegate :title, to: :content
 
       after_create do
-        element_locales << ElementLocale.create!(
-          element: self,
-          slug: @attrs[:slug],
-          locale: 'en_us'
-        )
+        Locale.all.each do |locale|
+          element_locales << ElementLocale.create!(
+            element: self,
+            slug: @attrs[:slug],
+            locale: locale.locale
+          )
+        end
       end
 
       def initialize(attrs)
         @attrs = attrs.dup
+        if attrs[:content].present?
+          # TODO temporary hack to cirumvent new multiple-content for multi locales
+          attrs[:contents] = [attrs.delete(:content)]
+        end
         attrs.delete(:slug)
         super(attrs)
       end
@@ -41,6 +47,10 @@ module Greenhorn
         when 'Category' then Category.find(id)
         when 'Commerce_Product' then Commerce::Product.find(id)
         end
+      end
+
+      def content
+        contents.find_by(locale: 'en_us')
       end
     end
   end
