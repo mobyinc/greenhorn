@@ -98,7 +98,7 @@ module Greenhorn
           (@attrs[:block_types] || []).each do |block_type|
             neo_block_types.create!(block_type)
           end
-        elsif part_of_matrix?
+        elsif part_of_matrix? && column_attrs.present?
           MatrixContent.add_field_column(matrix_handle, matrix_field_handle, *column_attrs)
         elsif column_attrs.present?
           Content.add_field_column(handle, *column_attrs)
