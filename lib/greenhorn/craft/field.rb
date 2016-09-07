@@ -157,6 +157,7 @@ module Greenhorn
         attrs = {
           name: attrs[:name],
           handle: attrs[:handle],
+          field_group: attrs[:field_group],
           type: type,
           context: attrs[:context] || 'global',
           settings: default_settings.merge(settings)
