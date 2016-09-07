@@ -3,6 +3,8 @@ require 'greenhorn/craft/base_model'
 module Greenhorn
   module Craft
     class CategoryGroup < BaseModel
+      include Craft::FieldBehaviors
+
       def self.table
         'categorygroups'
       end
