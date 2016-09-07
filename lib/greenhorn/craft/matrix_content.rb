@@ -17,7 +17,7 @@ module Greenhorn
         end
 
         def model_class_for(handle)
-          klass = "MatrixContent_#{handle}"
+          klass = "MatrixContent_#{handle.downcase}"
           return klass.constantize if const_defined?(klass)
 
           model_class = Class.new(self)
@@ -26,7 +26,7 @@ module Greenhorn
         end
 
         def content_table_name(matrix_handle)
-          "craft_matrixcontent_#{matrix_handle}"
+          "craft_matrixcontent_#{matrix_handle.downcase}"
         end
 
         def add_table(handle)

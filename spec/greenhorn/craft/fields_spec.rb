@@ -165,7 +165,7 @@ RSpec.describe Greenhorn::Craft::Field do
   describe 'Matrix field' do
     let(:field) do
       Greenhorn::Craft::Field.create(
-        name: 'Books',
+        name: 'Many Books',
         type: 'Matrix',
         block_types: [
           {
@@ -191,16 +191,16 @@ RSpec.describe Greenhorn::Craft::Field do
         { type: 'author', name: 'Jane Austen', phone: 555123 }
       ]
     end
-    let(:field_values) { { books: books } }
+    let(:field_values) { { manyBooks: books } }
 
     it 'saves and updates' do
-      expect(entry.reload.books).to match_array([
+      expect(entry.reload.manyBooks).to match_array([
         { type: 'author', name: 'Herman Melville', phone: 123456 },
         { type: 'translator', name: 'Mr Translator', phone: 654321 },
         { type: 'author', name: 'Jane Austen', phone: 555123 }
       ])
-      entry.update(books: [{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
-      expect(entry.reload.books).to match_array([{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
+      entry.update(manyBooks: [{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
+      expect(entry.reload.manyBooks).to match_array([{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
     end
   end
 end
