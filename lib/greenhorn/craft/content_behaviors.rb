@@ -6,8 +6,8 @@ module Greenhorn
           base.extend(ClassMethods)
 
           belongs_to :element, foreign_key: 'id', class_name: 'Craft::Element'
-          has_one :structure_element, through: :element
-          has_many :element_locales, through: :element
+          has_one :structure_element, through: :element, class_name: 'Craft::StructureElement'
+          has_many :element_locales, through: :element, class_name: 'Craft::ElementLocale'
           has_many :contents, through: :element, class_name: 'Craft::Content'
           if respond_to?(:field_layout_association)
             has_one :field_layout, through: field_layout_association, class_name: 'Craft::FieldLayout'
@@ -76,6 +76,28 @@ module Greenhorn
         fields.all? do |field, value|
           self.send(field) == value
         end
+      end
+
+      def content_for_locale(locale_code)
+        contents.find_by(locale: locale_code)
+      end
+
+      def locale(locale_code)
+        element_locales.find_by(locale: locale_code)
+      end
+
+      def to_h(locale: :en_us)
+        element_locale = locale(locale)
+        byebug if element_locale.nil?
+        uri = "#{Craft::Info.value('siteUrl')}/#{element_locale.uri}"
+
+        hash = super().merge(title: content.title, uri: uri)
+        field_layout.attached_fields.each do |attached_field|
+          field_value = content_for_locale(locale).field(attached_field.field.handle)
+          field_value = field_value.map(&:to_h) if attached_field.field_type == 'Tags'
+          hash[attached_field.field_handle.to_sym] = field_value
+        end
+        hash
       end
 
       module ClassMethods

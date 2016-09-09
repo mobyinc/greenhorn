@@ -7,6 +7,8 @@ module Greenhorn
       belongs_to :tab, class_name: 'FieldLayoutTab', foreign_key: 'tabId'
       belongs_to :field, foreign_key: 'fieldId'
 
+      delegate :handle, :name, :type, to: :field, prefix: true
+
       def self.table
         'fieldlayoutfields'
       end

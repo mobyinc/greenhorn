@@ -59,5 +59,11 @@ module Greenhorn
       content_keys = content_attributes_for(attrs).keys
       attrs.reject { |key, _value| content_keys.include?(key) }
     end
+
+    def to_h
+      hash = { id: id, uid: uid, dateCreated: dateCreated, dateUpdated: dateUpdated }
+      hash[:postDate] = postDate if respond_to?(:postDate)
+      hash
+    end
   end
 end

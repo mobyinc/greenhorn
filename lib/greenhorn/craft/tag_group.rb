@@ -14,6 +14,7 @@ module Greenhorn
 
       before_create do
         self.handle = Utility::Slug.new(name) unless handle.present?
+        self.field_layout = Greenhorn::Craft::FieldLayout.create!(type: 'Tag')
       end
 
       has_many :tags, foreign_key: 'groupId'
