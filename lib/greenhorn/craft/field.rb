@@ -49,7 +49,8 @@ module Greenhorn
             Neo: { default_settings: { maxBlocks: nil } },
             Entries: { default_settings: { sources: [], limit: '', selectionLabel: '' } },
             Categories: { default_settings: { source: nil, limit: '', selectionLabel: '', targetLocale: '' } },
-            Commerce_Products: { default_settings: { sources: '*', limit: '', selectionLabel: '', targetLocale: '' } }
+            Commerce_Products: { default_settings: { sources: '*', limit: '', selectionLabel: '', targetLocale: '' } },
+            Tags: { default_settings: { source: nil, limit: '', selectionLabel: '', targetLocale: '' } },
           }.with_indifferent_access
         end
 
@@ -142,7 +143,11 @@ module Greenhorn
         end
 
         if attrs[:source].present?
-          settings[:source] = "group:#{attrs[:source].id}"
+          if type == 'Tags'
+            settings[:source] = "taggroup:#{attrs[:source].id}"
+          else
+            settings[:source] = "group:#{attrs[:source].id}"
+          end
         end
 
         default_upload_location_source = settings[:defaultUploadLocationSource]
@@ -212,6 +217,12 @@ module Greenhorn
 
           raise Greenhorn::Errors::InvalidOperationError,
             "Can't attach category group #{item.category_group.name}, allowed group: #{source.name}"
+        elsif type == 'Tags'
+          source = TagGroup.find(settings['source'][9..-1])
+          return if source == item.tag_group
+
+          raise Greenhorn::Errors::InvalidOperationError,
+            "Can't attach tag group #{item.tag_group.name}, allowed group: #{source.name}"
         elsif type == 'Assets'
           # TODO
         end

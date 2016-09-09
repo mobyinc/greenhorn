@@ -135,7 +135,7 @@ RSpec.describe Greenhorn::Craft::Field do
       expect(entry.reload.types).to match_array([cat1, cat3])
     end
 
-    context 'when trying to associate a non-permitted entry type' do
+    context 'when trying to associate a non-permitted category group' do
       let(:field_values) { { types: [cat1, other_cat] } }
 
       it 'raises an error' do
@@ -201,6 +201,34 @@ RSpec.describe Greenhorn::Craft::Field do
       ])
       entry.update(manyBooks: [{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
       expect(entry.reload.manyBooks).to match_array([{ type: 'translator', name: 'Sr Translator', phone: 654321 }])
+    end
+  end
+
+  describe 'Tags field' do
+    let(:tag_group) { Greenhorn::Craft::TagGroup.create(name: 'Support') }
+    let(:tag_group2) { Greenhorn::Craft::TagGroup.create(name: 'Non-Support') }
+    let(:tag1) { Greenhorn::Craft::Tag.create(title: 'Tag 1', tag_group: tag_group) }
+    let(:tag2) { Greenhorn::Craft::Tag.create(title: 'Tag 1', tag_group: tag_group) }
+    let(:tag3) { Greenhorn::Craft::Tag.create(title: 'Tag 1', tag_group: tag_group) }
+    let(:other_tag) { Greenhorn::Craft::Tag.create(title: 'Other Tag', tag_group: tag_group2) }
+    let(:field) { Greenhorn::Craft::Field.create!(name: 'Support Tags', type: 'Tags', source: tag_group) }
+    let(:field_values) { { supportTags: [tag1, tag2] } }
+
+    it 'saves and updates' do
+      expect(entry.reload.supportTags).to match_array([tag1, tag2])
+      entry.update(supportTags: [tag1, tag3])
+      expect(entry.reload.supportTags).to match_array([tag1, tag3])
+    end
+
+    context 'when trying to associate a non-permitted tag group' do
+      let(:field_values) { { supportTags: [tag1, other_tag] } }
+
+      it 'raises an error' do
+        expect { entry.reload }.to raise_error(
+          Greenhorn::Errors::InvalidOperationError,
+          "Can't attach tag group Non-Support, allowed group: Support"
+        )
+      end
     end
   end
 end

@@ -46,6 +46,7 @@ module Greenhorn
         when 'Entry' then Entry.find(id)
         when 'Category' then Category.find(id)
         when 'Commerce_Product' then Commerce::Product.find(id)
+        when 'Tag' then Tag.find(id)
         end
       end
 
