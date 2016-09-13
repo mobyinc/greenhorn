@@ -52,6 +52,24 @@ module Greenhorn
                   selectionLabel: ''
                 }
             },
+            LinkIt: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  types: ['custom', 'entry', 'product'],
+                  defaultText: '',
+                  allowCustomText: '1',
+                  allowTarget: '1',
+                  entrySources: '*',
+                  entrySelectionLabel: 'Select an entry',
+                  assetSources: '*',
+                  assetSelectionLabel: 'Select an asset',
+                  categorySources: '*',
+                  categorySelectionLabel: 'Select a category',
+                  productSources: '*',
+                  productSelectionLabel: 'Select a product'
+                }
+            },
             Matrix: { default_settings: { maxBlocks: nil } },
             Neo: { default_settings: { maxBlocks: nil } },
             Entries: { default_settings: { sources: [], limit: '', selectionLabel: '' } },
