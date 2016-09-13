@@ -26,6 +26,13 @@ module Greenhorn
                   columnType: 'text'
                 }
             },
+            Dropdown: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  options: []
+                }
+            },
             Number: { column_attrs: [:float], default_settings: { min: '0', max: '', decimals: '0' } },
             Lightswitch: { column_attrs: [:boolean], default_settings: { default: '' } },
             Assets: {
@@ -147,6 +154,12 @@ module Greenhorn
             settings[:source] = "taggroup:#{attrs[:source].id}"
           else
             settings[:source] = "group:#{attrs[:source].id}"
+          end
+        end
+
+        if attrs[:options].present?
+          attrs[:options].each do |option|
+            option[:default] = option[:default] === true ? '1' : '0'
           end
         end
 

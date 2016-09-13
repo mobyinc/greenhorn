@@ -60,6 +60,20 @@ RSpec.describe Greenhorn::Craft::Field do
     end
   end
 
+  describe 'Dropdown field' do
+    let!(:field) { Greenhorn::Craft::Field.create!(name: 'Pick One', type: 'Dropdown', options: [
+      { label: 'Opt1', value: 'opt1', default: false },
+      { label: 'Opt2', value: 'opt2', default: true },
+      { label: 'Opt3', value: 'opt3', default: false }
+      ])
+    }
+    let(:field_values) { { pickOne: 'opt3' } }
+
+    it 'saves' do
+      expect(entry.reload.pickOne).to eq('opt3')
+    end
+  end
+
   describe 'Assets field' do
     base_path = File.expand_path('../..', File.dirname(__FILE__))
     images_path = 'images'
