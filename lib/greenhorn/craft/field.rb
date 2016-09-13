@@ -18,7 +18,7 @@ module Greenhorn
               column_attrs: [:text],
               default_settings:
                 {
-                  configFig: '',
+                  configFile: '',
                   availableAssetSources: '*',
                   availableTransforms: '*',
                   cleanupHtml: '1',
