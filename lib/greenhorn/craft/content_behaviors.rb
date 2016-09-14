@@ -86,9 +86,14 @@ module Greenhorn
         element_locales.find_by(locale: locale_code)
       end
 
+      def content_for(locale_code)
+        contents.find_by(locale: locale_code)
+      end
+
       def to_h(locale: :en_us)
         element_locale = locale(locale)
-        byebug if element_locale.nil?
+        content = content_for(locale)
+
         uri = "#{Craft::Info.value('siteUrl')}/#{element_locale.uri}"
 
         hash = super().merge(title: content.title, uri: uri)

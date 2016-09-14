@@ -61,9 +61,7 @@ module Greenhorn
     end
 
     def to_h
-      hash = { id: id, uid: uid, dateCreated: dateCreated, dateUpdated: dateUpdated }
-      hash[:postDate] = postDate if respond_to?(:postDate)
-      hash
+      attributes.with_indifferent_access
     end
   end
 end

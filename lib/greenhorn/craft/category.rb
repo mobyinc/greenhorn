@@ -9,7 +9,7 @@ module Greenhorn
       validates :category_group, presence: true
 
       class << self
-        def self.table
+        def table
           'categories'
         end
 

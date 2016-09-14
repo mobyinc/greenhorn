@@ -89,13 +89,10 @@ RSpec.describe Greenhorn::Craft::Entry do
       dateCreated: entry.dateCreated,
       dateUpdated: entry.dateUpdated,
       postDate: entry.postDate,
-      manyBooks: [
-        { type: 'author', name: 'Herman Melville', phone: 123456 },
-        { type: 'translator', name: 'Mr Translator', phone: 654321 }
-      ],
       uid: entry.uid,
       uri: 'http://greenhorn.dev/'
     )
+    expect(hash[:manyBooks].map { |tag| tag[:name] }).to eq(['Herman Melville', 'Mr Translator'])
     expect(hash[:supportTags].map { |tag| tag[:title] }).to eq(['Tag 1', 'Tag 2'])
   end
 end
