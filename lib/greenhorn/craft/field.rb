@@ -37,6 +37,13 @@ module Greenhorn
                   options: []
                 }
             },
+            MobyFieldPack_Position: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  options: ['left', 'right', 'center']
+                }
+            },
             PositionSelect: {
               column_attrs: [:text],
               default_settings:
@@ -195,7 +202,10 @@ module Greenhorn
 
         if attrs[:options].present?
           attrs[:options].each do |option|
-            option[:default] = option[:default] === true ? '1' : '0'
+            begin
+              option[:default] = option[:default] === true ? '1' : '0'
+            rescue Exception => e
+            end
           end
         end
 
