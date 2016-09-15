@@ -14,6 +14,10 @@ module Greenhorn
               column_attrs: [:text],
               default_settings: { placeholder: '', maxLength: '', multiline: '', initialRows: '4' }
             },
+            Color: {
+              column_attrs: [:text],
+              default_settings: { }
+            },
             RichText: {
               column_attrs: [:text],
               default_settings:
@@ -31,6 +35,13 @@ module Greenhorn
               default_settings:
                 {
                   options: []
+                }
+            },
+            PositionSelect: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  options: ['left','right','center']
                 }
             },
             Number: { column_attrs: [:float], default_settings: { min: '0', max: '', decimals: '0' } },
@@ -68,6 +79,13 @@ module Greenhorn
                   categorySelectionLabel: 'Select a category',
                   productSources: '*',
                   productSelectionLabel: 'Select a product'
+                }
+            },
+            Wistia: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  useSingleProject: '0'
                 }
             },
             Matrix: { default_settings: { maxBlocks: nil } },
