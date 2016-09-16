@@ -132,6 +132,7 @@ module Greenhorn
       belongs_to :field_group, foreign_key: 'groupId'
       has_many :block_types, foreign_key: 'fieldId', class_name: 'MatrixBlockType'
       has_many :neo_block_types, foreign_key: 'fieldId', class_name: 'Neo::BlockType'
+      has_many :neo_groups, foreign_key: 'fieldId', class_name: 'Neo::Group'
       has_many :relations, foreign_key: 'fieldId'
 
       validate :handle_is_unique
@@ -152,6 +153,10 @@ module Greenhorn
         elsif type == 'Neo'
           (@attrs[:block_types] || []).each do |block_type|
             neo_block_types.create!(block_type)
+          end
+
+          (@attrs[:groups] || []).each do |group|
+            neo_groups.create!(group)
           end
         elsif part_of_matrix? && column_attrs.present?
           MatrixContent.add_field_column(matrix_handle, matrix_field_handle, *column_attrs)
