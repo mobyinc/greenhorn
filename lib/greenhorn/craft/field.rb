@@ -44,6 +44,10 @@ module Greenhorn
                   options: ['left', 'right', 'center']
                 }
             },
+            MobyFieldPack_Padding: {
+              column_attrs: [:text],
+              default_settings: {}
+            },
             PositionSelect: {
               column_attrs: [:text],
               default_settings:
