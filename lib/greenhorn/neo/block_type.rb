@@ -17,7 +17,7 @@ module Greenhorn
       after_create do
         field_layout = Craft::FieldLayout.create!(type: 'Neo_Block')
         (@attrs[:fields] || []).each do |field|
-          field_layout.attach_field(field)
+          field_layout.add_field(field)
         end
         sort_order = sortOrder || (field.neo_block_types.where(topLevel: topLevel).maximum(:sortOrder) || 0) + 1
         update(field_layout: field_layout, sortOrder: sort_order)
