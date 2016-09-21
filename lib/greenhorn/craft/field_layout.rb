@@ -15,11 +15,11 @@ module Greenhorn
         tabs.first || tabs.create!(name: 'Tab 1')
       end
 
-      def add_field(field_or_handle)
+      def add_field(field_or_handle, tab=nil)
         field = field_for(field_or_handle)
         raise "Couldn't find field with handle `#{field_or_handle}`" unless field.present?
         max_order = attached_fields.maximum(:sortOrder) || 0
-        attached_fields.create!(field: field, tab: default_tab, sortOrder: max_order + 1)
+        attached_fields.create!(field: field, tab: tab || default_tab, sortOrder: max_order + 1)
       end
 
       def remove_field(field_or_handle)
