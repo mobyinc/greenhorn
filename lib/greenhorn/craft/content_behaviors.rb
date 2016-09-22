@@ -94,7 +94,7 @@ module Greenhorn
         element_locale = locale(locale)
         content = content_for(locale)
 
-        uri = "#{Craft::Info.value('siteUrl')}/#{element_locale.uri}"
+        uri = element_locale.uri
 
         hash = super().merge(title: content.title, uri: uri)
         field_layout.attached_fields.each do |attached_field|
