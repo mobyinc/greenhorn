@@ -1,6 +1,15 @@
 require 'active_record'
 require 'greenhorn/utility/uid'
 
+# monkey patch for Ruby < 2.1
+class Array
+  def to_h
+    self.inject({}) do |r, s|
+      r.merge!({s[0] => s[1]})
+    end
+  end
+end
+
 module Greenhorn
   class Model < ActiveRecord::Base
     self.inheritance_column = :_type_disabled
