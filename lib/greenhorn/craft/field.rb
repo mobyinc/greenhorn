@@ -37,6 +37,13 @@ module Greenhorn
                   options: []
                 }
             },
+            Checkboxes: {
+              column_attrs: [:text],
+              default_settings:
+                {
+                  options: []
+                }
+            },
             MobyFieldPack_Position: {
               column_attrs: [:text],
               default_settings:
@@ -47,6 +54,18 @@ module Greenhorn
             MobyFieldPack_Padding: {
               column_attrs: [:text],
               default_settings: {}
+            },
+            MobyFieldPack_MinMax: {
+              column_attrs: [:text],
+              default_settings: {}
+            },
+            MobyFieldPack_Range: {
+              column_attrs: [:text],
+              default_settings: {
+                minValue: 0,
+                maxValue: 1,
+                stepsValue: 0
+              }
             },
             PositionSelect: {
               column_attrs: [:text],
@@ -210,9 +229,13 @@ module Greenhorn
         end
 
         if attrs[:options].present?
-          attrs[:options].each do |option|
+          attrs[:options].each_with_index do |option, i|
             begin
-              option[:default] = option[:default] === true ? '1' : '0'
+              if option.is_a?(Hash)
+                option[:default] = option[:default] === true ? '1' : '0'
+              else
+                attrs[:options][i] = {label: option, value: option, default: false}
+              end
             rescue Exception => e
             end
           end
