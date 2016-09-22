@@ -1,4 +1,5 @@
 require 'greenhorn/commerce/base_model'
+require 'greenhorn/craft/field_behaviors'
 
 module Greenhorn
   module Commerce
