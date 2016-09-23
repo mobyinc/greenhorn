@@ -3,10 +3,10 @@ module Greenhorn
     class Handle
       def initialize(string)
         unless string.present?
-          raise Greenhorn::Errors::MissingAttributeError, "Can't create slug without a string"
+          raise Greenhorn::Errors::MissingAttributeError, "Can't create handle without a string"
         end
 
-        @handle = string.downcase.split(' ').map(&:camelize).join.camelize(:lower)
+        @handle = string.downcase.split(' ').map(&:camelize).join.gsub(/[^a-zA-Z]/, '').camelize(:lower)
       end
 
       def to_s
