@@ -158,3 +158,48 @@ craft.commerce.products.create(
   defaultPrice: 39.95
 )
 ```
+
+### Reasons + Neo fields
+You can add conditional logic directly to any `FieldLayout` record by calling `set_conditions`:
+
+```ruby
+fl = craft.neo.block_types.find_by(name: 'Billboard').field_layout
+fl.set_conditions(
+  nightMode: [
+  # nightMode will only be shown if...
+    [
+      { field: 'billboardType', equals: 'image' }, # and
+      { field: 'numberOfColumns', equals: '6' } # and
+    ], # or
+    [
+      { field: 'billboardType', does_not_equal: 'image' }
+    ]
+  ]
+)
+```
+
+or you can pass `conditions` to a block type hash when creating a Neo field:
+
+```ruby
+billboard_content_blocks = craft.fields.create!(
+  name: 'Reasons Billboard Content Blocks',
+  type: 'Neo',
+  block_types: [
+    {
+      name: 'Background',
+      topLevel: false,
+      maxBlocks: 1,
+      fields: [
+        'backgroundType',
+        'color',
+        'image'
+      ],
+      conditions: {
+        color: [
+          [ { field: 'backgroundType', equals: 'color' } ]
+        ]
+      }
+    }
+  ]
+)
+```

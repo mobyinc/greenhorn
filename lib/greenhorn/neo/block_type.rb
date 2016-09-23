@@ -21,7 +21,12 @@ module Greenhorn
           field_layout.add_field(field)
         end
 
+        field_layout.set_conditions(@conditions) if @conditions.present?
         update(field_layout: field_layout, sortOrder: next_sort_order)
+      end
+
+      after_update do
+        field_layout.set_conditions(@conditions) if @conditions.present?
       end
 
       def initialize(attrs)
@@ -35,6 +40,11 @@ module Greenhorn
       def add_child(block)
         new_child_blocks = (childBlocks || []) << block.handle
         update!(childBlocks: new_child_blocks.uniq)
+      end
+
+      def assign_attributes(attrs)
+        @conditions = attrs.delete(:conditions) if attrs[:conditions].present?
+        super(attrs)
       end
     end
   end

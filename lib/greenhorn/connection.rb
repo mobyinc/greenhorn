@@ -49,9 +49,22 @@ module Greenhorn
       Neo.new
     end
 
+    def reasons
+      Reasons.new
+    end
+
     class Neo
       def initialize
         Greenhorn::Neo::BaseModel.descendants.each do |model_class|
+          method_name = model_class.to_s.split('::').last.underscore.pluralize
+          define_singleton_method(method_name) { model_class }
+        end
+      end
+    end
+
+    class Reasons
+      def initialize
+        Greenhorn::Reasons::BaseModel.descendants.each do |model_class|
           method_name = model_class.to_s.split('::').last.underscore.pluralize
           define_singleton_method(method_name) { model_class }
         end
