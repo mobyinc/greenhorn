@@ -40,6 +40,12 @@ RSpec.describe Greenhorn::Craft::Field do
     it 'saves' do
       expect(entry.reload.shortDescription).to eq('blah')
     end
+
+    it 'updates the field handle and retrieves' do
+      expect(entry.reload.shortDescription).to eq('blah')
+      field.update(handle: 'short_description')
+      expect(entry.reload.short_description).to eq('blah')
+    end
   end
 
   describe 'Richtext field' do

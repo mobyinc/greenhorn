@@ -184,6 +184,10 @@ module Greenhorn
         end
       end
 
+      after_update do
+        Content.rename_field_column(handle_was, handle) if handle_changed?
+      end
+
       def add_block_type(block_type)
         if type == 'Matrix'
           block_types.find_or_create_by!(block_type)

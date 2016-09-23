@@ -36,6 +36,17 @@ module Greenhorn
             remove_column table_name, column_name
           end
         end
+
+        def rename_field_column(old_handle, new_handle)
+          reset_column_information
+
+          old_column_name = "field_#{old_handle}"
+          new_column_name = "field_#{new_handle}"
+          table_name = self.table_name
+          ActiveRecord::Migration.class_eval do
+            rename_column table_name, old_column_name, new_column_name
+          end
+        end
       end
 
       belongs_to :element, foreign_key: 'elementId'
