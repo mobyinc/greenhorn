@@ -98,8 +98,7 @@ module Greenhorn
 
         hash = super().merge(title: content.title, uri: uri)
         field_layout.attached_fields.each do |attached_field|
-          field_value = content_for_locale(locale).field(attached_field.field.handle)
-          field_value = field_value.map(&:to_h) if attached_field.field_type == 'Tags'
+          field_value = hash_value_for(content_for_locale(locale).field(attached_field.field.handle))
           hash[attached_field.field_handle.to_sym] = field_value
         end
         hash

@@ -72,5 +72,17 @@ module Greenhorn
     def to_h
       attributes.with_indifferent_access
     end
+
+    private
+
+    def hash_value_for(value)
+      if value.is_a?(Array)
+        value.map { |v| hash_value_for(v) }
+      elsif value.nil?
+        nil
+      else
+        value.respond_to?(:to_h) ? value.to_h : value
+      end
+    end
   end
 end
