@@ -164,6 +164,12 @@ module Greenhorn
 
         super(attrs)
       end
+
+      def to_h
+        hash = super()
+        hash[:url] = "#{asset_source.settings['url']}/#{filename}" if asset_source.settings['publicURLs']
+        hash
+      end
     end
   end
 end
