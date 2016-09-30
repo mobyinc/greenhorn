@@ -97,7 +97,7 @@ module Greenhorn
                   selectionLabel: ''
                 }
             },
-            LinkIt: {
+            FruitLinkIt: {
               column_attrs: [:text],
               default_settings:
                 {
