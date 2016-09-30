@@ -51,6 +51,10 @@ module Greenhorn
                   options: ['left', 'right', 'center']
                 }
             },
+            AbTest_Test: {
+              column_attrs: [:text],
+              default_settings: { sources: [], limit: '', selectionLabel: '' }
+            },
             MobyFieldPack_Padding: {
               column_attrs: [:text],
               default_settings: {}
