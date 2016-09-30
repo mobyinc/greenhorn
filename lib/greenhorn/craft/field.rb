@@ -115,7 +115,7 @@ module Greenhorn
                   productSelectionLabel: 'Select a product'
                 }
             },
-            Wistia: {
+            WistiaVideos: {
               column_attrs: [:text],
               default_settings:
                 {
