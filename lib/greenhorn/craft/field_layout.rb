@@ -16,7 +16,7 @@ module Greenhorn
       end
 
       def default_tab
-        tabs.first || tabs.create!(name: 'Tab 1')
+        tabs.first || tabs.create!(name: 'Content')
       end
 
       def add_field(field_or_handle, tab=nil)
