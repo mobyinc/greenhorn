@@ -70,7 +70,7 @@ module Greenhorn
           asset_path =        path_directories.join('/')
 
           fog_settings = { provider: 'Local', local_root: asset_path }
-        when 'AWS'
+        when 'S3'
           fog_settings = {
             provider: 'AWS',
             aws_access_key_id: asset_source.settings['keyId'],

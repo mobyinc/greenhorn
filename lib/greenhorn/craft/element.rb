@@ -23,14 +23,22 @@ module Greenhorn
             slug: @attrs[:slug],
             locale: locale.locale
           )
+          content_attrs = @content_attrs || {}
+          next if contents.find_by(locale: locale.locale).present?
+          contents << Content.create!(content_attrs.merge(
+            element: self,
+            locale: locale.locale
+          ))
         end
       end
 
       def initialize(attrs)
         @attrs = attrs.dup
-        if attrs[:content].present?
+        @content = attrs.delete(:content)
+        @content_attrs = attrs.delete(:content_attrs)
+        if @content.present?
           # TODO temporary hack to cirumvent new multiple-content for multi locales
-          attrs[:contents] = [attrs.delete(:content)]
+          attrs[:contents] = [@content]
         end
         attrs.delete(:slug)
         super(attrs)

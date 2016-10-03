@@ -12,18 +12,25 @@ module Greenhorn
 
       delegate :title, to: :element
 
+      after_create do
+        Purchasable.create!(element: element, price: price, sku: sku)
+      end
+
       def initialize(attrs)
         attrs = attrs.with_indifferent_access
         non_field_attrs = %w(title product).concat(self.class.column_names)
         field_attrs = attrs.reject { |key, _value| non_field_attrs.include?(key) }
         content_attrs = field_attrs.merge(title: attrs[:title])
 
+        content_attrs.delete(:slug)
         slug = attrs[:slug].present? ? attrs[:slug] : Greenhorn::Utility::Slug.new(attrs[:title])
         element = Greenhorn::Craft::Element.create!(
           slug: slug,
           type: 'Commerce_Variant',
-          content: Greenhorn::Craft::Content.new(content_attrs)
+          content_attrs: content_attrs
         )
+
+        sortOrder = attrs[:sortOrder] || attrs[:product].present? ? ((attrs[:product].variants.maximum(:sortOrder) || -1) + 1) : 0
 
         super(
           id: element.id,
@@ -32,7 +39,8 @@ module Greenhorn
           sku: attrs[:sku],
           stock: attrs[:stock],
           unlimitedStock: attrs[:unlimitedStock],
-          product: attrs[:product]
+          product: attrs[:product],
+          sortOrder: sortOrder
         )
       end
     end

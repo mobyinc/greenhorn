@@ -212,10 +212,10 @@ module Greenhorn
         end
       end
 
-      def initialize(attrs)
+      def assign_attributes(attrs)
         attrs = attrs.with_indifferent_access
         @attrs = attrs
-        type = attrs[:type] || 'PlainText'
+        type = self.type || attrs[:type] || 'PlainText'
         self.class.verify_field_type!(type)
 
         default_settings = default_settings_for(type)
@@ -223,8 +223,9 @@ module Greenhorn
         settings = default_settings.merge(attrs.slice(*default_settings.keys))
 
         if attrs[:sources].present?
-          settings[:sources] = attrs[:sources].map do |source_section|
-            "section:#{source_section.id}"
+          settings[:sources] = attrs[:sources].map do |source|
+            prefix = type == 'Assets' ? 'folder' : 'section'
+            "#{prefix}:#{source.id}"
           end
         end
 
@@ -258,19 +259,17 @@ module Greenhorn
           settings[:singleUploadLocationSource] = single_upload_location_source.id.to_s
         end
 
-        attrs = {
-          name: attrs[:name],
-          handle: attrs[:handle],
-          field_group: attrs[:field_group],
-          type: type,
-          context: attrs[:context] || 'global',
-          settings: default_settings.merge(settings)
-        }
+        settings.keys.each { |setting| attrs.delete(setting) }
+
+        attrs[:type] = type
+        attrs[:context] ||= 'global'
+        attrs[:settings] = default_settings.merge(settings)
+
         super(attrs)
       end
 
       def handle_is_unique
-        errors.add(:handle, 'is already taken') if Field.find_by(handle: handle, context: 'global').present?
+        errors.add(:handle, 'is already taken') if new_record? && Field.find_by(handle: handle, context: 'global').present?
       end
 
       def part_of_matrix?

@@ -108,7 +108,7 @@ module Greenhorn
       end
 
       def assign_attributes(attrs)
-        field_attrs = attrs.reject { |key, _value| %i(element locale title).include?(key.to_sym) }
+        field_attrs = attrs.reject { |key, _value| (%i(element locale title) + self.class.column_names.map(&:to_sym)).include?(key.to_sym) }
 
         grouped_attrs = field_attrs.group_by do |field_handle, _value|
           field = Greenhorn::Craft::Field.find_by(handle: field_handle)
