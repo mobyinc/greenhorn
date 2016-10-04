@@ -7,6 +7,10 @@ module Greenhorn
 
       belongs_to :element, foreign_key: 'elementId'
 
+      delegate :field_layout, to: :block_type
+      delegate :attached_fields, to: :field_layout
+      delegate :relations_to, to: :element
+
       class << self
         def handle
           name.sub('MatrixContent_', '')
@@ -85,11 +89,22 @@ module Greenhorn
       end
 
       def field_values
-        handle = block.type.handle
-        values = { type: handle }
+        block_handle = block.type.handle
+        values = { type: block_handle }
+
         attributes
-          .select { |attribute, value| attribute.starts_with?("field_#{handle}") }
-          .each { |attribute, value| values[attribute.sub("field_#{handle}_", '').to_sym] = value }
+          .select { |attribute, value| attribute.starts_with?("field_#{block_handle}") }
+          .each { |attribute, value| values[attribute.sub("field_#{block_handle}_", '').to_sym] = value }
+
+        attached_fields.each do |attached_field|
+          field = attached_field.field
+          next if values.keys.include?(field.handle)
+
+          relation_value = relations_to.select { |relation| relation.field == field }.map(&:target)
+          relation_value = relation_value.first if field.settings['limit'] == 1
+          values[field.handle.to_sym] = relation_value
+        end
+
         values
       end
 
@@ -105,8 +120,16 @@ module Greenhorn
         MatrixBlock.find(element.id)
       end
 
+      def block_type
+        Greenhorn::Craft::MatrixBlockType.find_by(field: field)
+      end
+
       def block_types
         field.block_types
+      end
+
+      def related_elements
+        @related_elements ||= Element.find(element.relations_to.map(&:target))
       end
     end
   end

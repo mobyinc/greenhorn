@@ -264,7 +264,6 @@ module Greenhorn
         attrs[:type] = type
         attrs[:context] ||= 'global'
         attrs[:settings] = default_settings.merge(settings)
-
         super(attrs)
       end
 

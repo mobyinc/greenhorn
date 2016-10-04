@@ -40,7 +40,10 @@ module Greenhorn
 
       def initialize(attrs)
         require_attributes!(attrs, %i(name type))
+        super(attrs)
+      end
 
+      def assign_attributes(attrs)
         default_settings = self.class.default_settings_for(attrs[:type])
         attrs[:settings] = default_settings.merge(attrs.slice(*SETTINGS_ATTRS))
         SETTINGS_ATTRS.each { |key| attrs.delete(key) }
