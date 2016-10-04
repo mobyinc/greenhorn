@@ -6,6 +6,7 @@ module Greenhorn
       include Craft::ContentBehaviors
 
       belongs_to :category_group, foreign_key: 'groupId'
+
       validates :category_group, presence: true
 
       class << self
@@ -45,6 +46,10 @@ module Greenhorn
 
       def locales
         element_locales.map(&:source_locale)
+      end
+
+      def field_layout
+        category_group.field_layout
       end
     end
   end
