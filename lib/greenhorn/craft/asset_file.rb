@@ -167,8 +167,13 @@ module Greenhorn
 
       def to_h
         hash = super()
-        hash[:url] = "#{asset_source.settings['url']}/#{filename}" if asset_source.settings['publicURLs']
+        hash[:url] = public_url
         hash
+      end
+
+      def public_url
+        return nil unless asset_source.nil? || asset_source.settings['publicURLs'] || asset_folder.nil?
+        "#{asset_source.settings['url']}#{asset_source.settings['urlPrefix']}#{asset_source.settings['subfolder']}#{asset_folder.path}#{filename}" if asset_source.settings['publicURLs']
       end
     end
   end
