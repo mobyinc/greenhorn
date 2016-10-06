@@ -42,6 +42,10 @@ module Greenhorn
         update!(childBlocks: new_child_blocks.uniq)
       end
 
+      def remove_child(block)
+        update!(childBlocks: childBlocks.delete_if { |handle| handle == block.handle })
+      end
+
       def assign_attributes(attrs)
         @conditions = attrs.delete(:conditions) if attrs[:conditions].present?
         super(attrs)
