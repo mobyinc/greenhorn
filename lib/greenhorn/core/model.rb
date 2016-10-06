@@ -25,6 +25,9 @@ module Greenhorn
       end
     end
 
+    delegate :add_field, to: :field_layout
+    delegate :remove_field, to: :field_layout
+
     before_create do
       self.uid = Utility::UID.new
       self.dateCreated = Time.now.utc
