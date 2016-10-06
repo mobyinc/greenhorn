@@ -220,6 +220,10 @@ module Greenhorn
 
         default_settings = default_settings_for(type)
         attrs[:restrictFiles] = 1 if attrs[:allowedKinds].present?
+
+        (settings || []).each do |key, value|
+          attrs[key] ||= value
+        end
         settings = default_settings.merge(attrs.slice(*default_settings.keys))
 
         if attrs[:sources].present?

@@ -67,16 +67,25 @@ RSpec.describe Greenhorn::Craft::Field do
   end
 
   describe 'Dropdown field' do
-    let!(:field) { Greenhorn::Craft::Field.create!(name: 'Pick One', type: 'Dropdown', options: [
+    let(:options) { [
       { label: 'Opt1', value: 'opt1', default: false },
       { label: 'Opt2', value: 'opt2', default: true },
       { label: 'Opt3', value: 'opt3', default: false }
-      ])
+      ]
     }
+    let!(:field) { Greenhorn::Craft::Field.create!(name: 'Pick One', type: 'Dropdown', options: options) }
     let(:field_values) { { pickOne: 'opt3' } }
 
     it 'saves' do
       expect(entry.reload.pickOne).to eq('opt3')
+    end
+
+    it 'updates without overriding options' do
+      field.update(handle: 'testing')
+      expect(field.reload.handle).to eq('testing')
+      expect(field.settings['options'].first['label']).to eq('Opt1')
+      expect(field.settings['options'].first['value']).to eq('opt1')
+      expect(field.settings['options'].first['default']).to eq('0')
     end
   end
 
