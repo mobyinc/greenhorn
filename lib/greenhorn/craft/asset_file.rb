@@ -172,8 +172,11 @@ module Greenhorn
       end
 
       def public_url
-        return nil unless asset_source.nil? || asset_source.settings['publicURLs'] || asset_folder.nil?
-        "#{asset_source.settings['url']}#{asset_source.settings['urlPrefix']}#{asset_source.settings['subfolder']}#{asset_folder.path}#{filename}" if asset_source.settings['publicURLs']
+        public_urls = asset_source.settings['publicURLs'] || asset_source.settings['publicUrls']
+        return nil if asset_source.nil? || !public_urls
+        folder = asset_folder.path
+        folder << '/' unless folder.end_with?('/')
+        "#{asset_source.settings['url']}#{asset_source.settings['urlPrefix']}#{asset_source.settings['subfolder']}#{folder}#{filename}"
       end
     end
   end

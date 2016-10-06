@@ -7,6 +7,8 @@ module Greenhorn
         'commerce_variants'
       end
 
+      include Craft::ContentBehaviors
+
       belongs_to :product, foreign_key: 'productId'
       belongs_to :element, foreign_key: 'id', class_name: 'Greenhorn::Craft::Element'
 
@@ -42,6 +44,10 @@ module Greenhorn
           product: attrs[:product],
           sortOrder: sortOrder
         )
+      end
+
+      def field_layout
+        product.type.variant_field_layout
       end
     end
   end
