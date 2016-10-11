@@ -25,8 +25,7 @@ module Greenhorn
       end
     end
 
-    delegate :add_field, to: :field_layout
-    delegate :remove_field, to: :field_layout
+    delegate :add_field, :remove_field, :add_conditions, :set_conditions, to: :field_layout
 
     before_create do
       self.uid = Utility::UID.new
