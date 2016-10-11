@@ -81,7 +81,6 @@ module Greenhorn
             Number: { column_attrs: [:float], default_settings: { min: '0', max: '', decimals: '0' } },
             Lightswitch: { column_attrs: [:boolean], default_settings: { default: '' } },
             Assets: {
-              column_attrs: [:text],
               default_settings:
                 {
                   useSingleFolder: '1',
@@ -207,7 +206,7 @@ module Greenhorn
         if type == 'Matrix'
           MatrixContent.remove_table(handle)
         elsif !part_of_matrix?
-          column_type = self.class.column_type_for(type)
+          column_type = self.class.column_attrs_for(type).try(:first)
           Content.remove_field_column(handle) if column_type.present?
         end
       end

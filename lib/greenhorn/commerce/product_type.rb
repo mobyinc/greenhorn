@@ -53,7 +53,7 @@ module Greenhorn
 
       # Attaches a field to the product type's variant field list
       def add_variant_field(field)
-        variant_field_layout.attach_field(field)
+        variant_field_layout.add_field(field)
       end
 
       # @!visibility private

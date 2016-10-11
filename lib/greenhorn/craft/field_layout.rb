@@ -41,6 +41,27 @@ module Greenhorn
       end
 
       def set_conditions(conditionals)
+        Reasons::Reason.create_or_update(field_layout: self, conditionals: parsed_conditionals(conditionals))
+      end
+
+      def add_conditions(conditionals)
+        Reasons::Reason.add_conditions(field_layout: self, conditionals: parsed_conditionals(conditionals))
+      end
+
+      def assign_attributes(attrs)
+        @conditions = attrs.delete(:conditions)
+        super(attrs)
+      end
+
+      private
+
+      def field_for(field_or_handle)
+        field = field_or_handle.is_a?(Field) ? field_or_handle : Field.find_by(handle: field_or_handle)
+        raise Greenhorn::Errors::InvalidOperationError, "Field #{field_or_handle} doesn't exist" if field.nil?
+        field
+      end
+
+      def parsed_conditionals(conditionals)
         conditionals = conditionals.map do |field_handle, condition_groups|
           host_field = field_for(field_handle)
           raise Greenhorn::Errors::InvalidOperationError,
@@ -51,7 +72,6 @@ module Greenhorn
               conditional_field = field_for(condition[:field])
               raise Greenhorn::Errors::InvalidOperationError,
                 "Field #{conditional_field.handle} not attached to this field layout" unless field?(conditional_field)
-
 
               if !condition[:equals].nil?
                 compare = '=='
@@ -67,20 +87,6 @@ module Greenhorn
 
           [host_field.id, conditions]
         end.to_h
-        Reasons::Reason.create_or_update(field_layout: self, conditionals: conditionals)
-      end
-
-      def assign_attributes(attrs)
-        @conditions = attrs.delete(:conditions)
-        super(attrs)
-      end
-
-      private
-
-      def field_for(field_or_handle)
-        field = field_or_handle.is_a?(Field) ? field_or_handle : Field.find_by(handle: field_or_handle)
-        raise Greenhorn::Errors::InvalidOperationError, "Field #{field_or_handle} doesn't exist" if field.nil?
-        field
       end
     end
   end
