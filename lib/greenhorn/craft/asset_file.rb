@@ -53,10 +53,13 @@ module Greenhorn
 
       delegate :title, to: :element
 
-      before_save { self.dateModified = Time.now.utc }
+      before_save {
+        self.dateModified = Time.now.utc if self.dateModified.nil?
+      }
+
       after_create do
         if asset_source.type == 'Webdam'
-          # ignore for now
+          # ignore for now. better way to skip this hook from caller?
         else
           case asset_source.type
           when 'Local'

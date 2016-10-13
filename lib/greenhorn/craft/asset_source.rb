@@ -26,7 +26,7 @@ module Greenhorn
       belongs_to :field_layout, foreign_key: 'fieldLayoutId'
       has_one :asset_folder, foreign_key: 'sourceId' # TODO: this should be has_many
 
-      validates :type, inclusion: { in: %w(S3 Local) }
+      validates :type, inclusion: { in: %w(S3 Local Webdam) }
       validate :config_is_valid
       validate :url_prefix_is_valid
 
@@ -71,6 +71,7 @@ module Greenhorn
       end
 
       def config_is_valid
+        return true if type == 'Webdam' #hack for now- these don't actually get saved for real
         missing_attrs = required_settings.reject { |key| settings.include?(key) }
         errors.add(:base, "Missing attributes required for #{type} source: #{missing_attrs}") if missing_attrs.present?
       end

@@ -27,7 +27,9 @@ module Greenhorn
               content.update(@content_attrs.merge(element: element, locale: locale.locale))
             end
           end
-          after_update { element.content.update(@content_attrs.merge(element: element)) }
+          after_update {
+            element.content.update(@content_attrs.merge(element: element)) if @content_attrs
+          }
         end
       end
 
