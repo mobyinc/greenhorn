@@ -55,62 +55,66 @@ module Greenhorn
 
       before_save { self.dateModified = Time.now.utc }
       after_create do
-        case asset_source.type
-        when 'Local'
-          asset_path = asset_source.settings['path']
-          if asset_path.include?('{basePath}')
-            base_path = config.base_path
-            raise Errors::UnknownBasePathError, asset_path if base_path.nil?
-            asset_path.sub!('{basePath}', base_path)
+        if asset_source.type == 'Webdam'
+          # ignore for now
+        else
+          case asset_source.type
+          when 'Local'
+            asset_path = asset_source.settings['path']
+            if asset_path.include?('{basePath}')
+              base_path = config.base_path
+              raise Errors::UnknownBasePathError, asset_path if base_path.nil?
+              asset_path.sub!('{basePath}', base_path)
+            end
+
+            # Extract the ultimate directory from the path for use w/ Fog
+            path_directories =  asset_path.split('/')
+            directory =         path_directories.pop
+            asset_path =        path_directories.join('/')
+
+            fog_settings = { provider: 'Local', local_root: asset_path }
+          when 'S3'
+            fog_settings = {
+              provider: 'AWS',
+              aws_access_key_id: asset_source.settings['keyId'],
+              aws_secret_access_key: asset_source.settings['secret'],
+              region: asset_source.settings['location'],
+              path_style: true
+            }
+            directory = asset_source.settings['bucket']
           end
 
-          # Extract the ultimate directory from the path for use w/ Fog
-          path_directories =  asset_path.split('/')
-          directory =         path_directories.pop
-          asset_path =        path_directories.join('/')
+          connection = Fog::Storage.new(fog_settings)
+          dir = connection.directories.get(directory) || connection.directories.create(key: directory)
+          expires = asset_source.settings['expires']
+          cache_headers =
+            if expires.present?
+              amount = expires.match(/\d+/)[0].to_i
+              cache_seconds =
+                if expires.include?('second')
+                  amount
+                elsif expires.include?('minute')
+                  amount.send(:minutes).to_i
+                elsif expires.include?('hour')
+                  amount.send(:hours).to_i
+                elsif expires.include?('day')
+                  amount.send(:days).to_i
+                elsif expires.include?('year')
+                  amount.send(:years).to_i
+                end
+              { 'Cache-Control' => "max-age=#{cache_seconds}" }
+            else
+              {}
+            end
 
-          fog_settings = { provider: 'Local', local_root: asset_path }
-        when 'S3'
-          fog_settings = {
-            provider: 'AWS',
-            aws_access_key_id: asset_source.settings['keyId'],
-            aws_secret_access_key: asset_source.settings['secret'],
-            region: asset_source.settings['location'],
-            path_style: true
-          }
-          directory = asset_source.settings['bucket']
+          file = dir.files.create(
+            key: "#{asset_source.settings['subfolder']}/#{filename}",
+            body: self.class.file_contents_for(@file),
+            public: true,
+            metadata: cache_headers
+          )
+          update(size: file.content_length)
         end
-
-        connection = Fog::Storage.new(fog_settings)
-        dir = connection.directories.get(directory) || connection.directories.create(key: directory)
-        expires = asset_source.settings['expires']
-        cache_headers =
-          if expires.present?
-            amount = expires.match(/\d+/)[0].to_i
-            cache_seconds =
-              if expires.include?('second')
-                amount
-              elsif expires.include?('minute')
-                amount.send(:minutes).to_i
-              elsif expires.include?('hour')
-                amount.send(:hours).to_i
-              elsif expires.include?('day')
-                amount.send(:days).to_i
-              elsif expires.include?('year')
-                amount.send(:years).to_i
-              end
-            { 'Cache-Control' => "max-age=#{cache_seconds}" }
-          else
-            {}
-          end
-
-        file = dir.files.create(
-          key: "#{asset_source.settings['subfolder']}/#{filename}",
-          body: self.class.file_contents_for(@file),
-          public: true,
-          metadata: cache_headers
-        )
-        update(size: file.content_length)
       end
 
       # Instantiates a new asset file
