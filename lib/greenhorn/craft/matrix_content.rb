@@ -92,10 +92,6 @@ module Greenhorn
         block_handle = block.type.handle
         values = { type: block_handle }
 
-        attributes
-          .select { |attribute, value| attribute.starts_with?("field_#{block_handle}") }
-          .each { |attribute, value| values[attribute.sub("field_#{block_handle}_", '').to_sym] = value }
-
         attached_fields.each do |attached_field|
           field = attached_field.field
           next if values.keys.include?(field.handle)
@@ -104,6 +100,10 @@ module Greenhorn
           relation_value = relation_value.first if field.settings['limit'] == 1
           values[field.handle.to_sym] = relation_value
         end
+
+        attributes
+          .select { |attribute, value| attribute.starts_with?("field_#{block_handle}") }
+          .each { |attribute, value| values[attribute.sub("field_#{block_handle}_", '').to_sym] = value }
 
         values
       end
