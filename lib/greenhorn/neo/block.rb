@@ -6,6 +6,7 @@ module Greenhorn
       def self.table
         'neoblocks'
       end
+      include Craft::ContentBehaviors
 
       belongs_to :element, foreign_key: 'id', class_name: 'Craft::Element'
       belongs_to :owner, foreign_key: 'ownerId', class_name: 'Craft::Element'
