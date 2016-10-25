@@ -124,6 +124,16 @@ module Greenhorn
         super
       end
 
+      def update_status(new_status, message = nil)
+        histories.create(
+          previous_status: status,
+          new_status: new_status,
+          customer: customer,
+          message: message
+        )
+        update(status: new_status)
+      end
+
       private
 
       def order_setting
