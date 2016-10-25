@@ -62,12 +62,12 @@ module Greenhorn
       end
 
       def field_layout_method
-        if respond_to?(:field_layout)
-          :field_layout
-        elsif self.class.respond_to?(:field_layout_association)
+        if self.class.respond_to?(:field_layout_association)
           self.class.field_layout_association
-        else
+        elsif self.class.respond_to?(:field_layout_parent)
           self.class.field_layout_parent
+        else
+          :field_layout
         end
       end
 
