@@ -54,7 +54,7 @@ module Greenhorn
       def initialize(attrs)
         require_attributes!(attrs, %i(type title defaultSku defaultPrice))
 
-        default_variant_params = attrs.delete(:default_variant_attrs) || {}
+        default_variant_params = (attrs.delete(:default_variant_attrs) || {}).with_indifferent_access
 
         attrs[:promotable] = true if attrs[:promotable].nil?
         @slug = attrs[:slug].present? ? attrs[:slug] : Utility::Slug.new(attrs[:title])

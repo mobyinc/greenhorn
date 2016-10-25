@@ -35,7 +35,7 @@ module Greenhorn
 
       def non_field_attributes
         column_names = self.class.column_names
-        (column_names + methods + methods.map { |method| method.to_s.sub('=', '') }).map(&:to_sym)
+        (column_names + methods + methods.map { |method| method.to_s.sub('=', '') }).map(&:to_s)
       end
 
       def field_attributes(attrs)
@@ -43,8 +43,9 @@ module Greenhorn
       end
 
       def assign_attributes(attrs)
+        attrs = attrs.with_indifferent_access
         field_attrs = field_attributes(attrs)
-        if field_attrs.present?
+        if field_attrs.present? && verify_fields_attached?
           (attrs[field_layout_method] || send(field_layout_method)).verify_fields_attached!(field_attrs.keys)
         end
 
@@ -56,8 +57,14 @@ module Greenhorn
         super(attrs)
       end
 
+      def verify_fields_attached?
+        true
+      end
+
       def field_layout_method
-        if self.class.respond_to?(:field_layout_association)
+        if respond_to?(:field_layout)
+          :field_layout
+        elsif self.class.respond_to?(:field_layout_association)
           self.class.field_layout_association
         else
           self.class.field_layout_parent
