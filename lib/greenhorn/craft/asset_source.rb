@@ -25,6 +25,7 @@ module Greenhorn
 
       belongs_to :field_layout, foreign_key: 'fieldLayoutId'
       has_one :asset_folder, foreign_key: 'sourceId' # TODO: this should be has_many
+      has_many :asset_files, foreign_key: 'sourceId'
 
       validates :type, inclusion: { in: %w(S3 Local Webdam) }
       validate :config_is_valid
