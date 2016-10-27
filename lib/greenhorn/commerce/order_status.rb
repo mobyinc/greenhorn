@@ -32,6 +32,7 @@ module Greenhorn
         end
       end
 
+      has_many :status_emails, foreign_key: 'orderStatusId', class_name: 'OrderStatusEmail'
       validates :handle, :name, presence: true
 
       def update(attrs)
