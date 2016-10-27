@@ -8,6 +8,8 @@ module Greenhorn
       end
 
       belongs_to :element, foreign_key: 'id', class_name: 'Greenhorn::Craft::Element'
+
+      delegate :item, to: :element
     end
   end
 end

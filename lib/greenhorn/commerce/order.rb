@@ -66,6 +66,7 @@ module Greenhorn
       belongs_to :customer, foreign_key: 'customerId', class_name: 'Customer'
       belongs_to :status, foreign_key: 'orderStatusId', class_name: 'OrderStatus'
       has_many :histories, foreign_key: 'orderId', class_name: 'OrderHistory'
+      has_many :line_items, foreign_key: 'orderId'
 
       before_create do
         create_element(type: 'Order')
