@@ -185,9 +185,15 @@ module Greenhorn
         folder << '/' unless folder.end_with?('/') if folder
         urlPrefix = asset_source.settings['urlPrefix']
         urlPrefix << '/' unless urlPrefix.end_with?('/') if urlPrefix
-        subfolder = asset_source.settings['subfolder']
+        subfolder = asset_source.settings['subfolder'] unless asset_source.type == 'Webdam'
         subfolder << '/' unless subfolder.end_with?('/') if subfolder
-        "#{asset_source.settings['url']}#{urlPrefix}#{subfolder}#{folder}#{filename}"
+        value = "#{asset_source.settings['url']}#{urlPrefix}#{subfolder}#{folder}#{filename}"
+
+        if ENV['BASE_URL'].present?
+          value = value.gsub(/\{baseUrl}/, ENV['BASE_URL'])
+        end
+
+        value
       end
     end
   end
