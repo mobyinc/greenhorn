@@ -44,6 +44,11 @@ module Greenhorn
         super(attrs)
       end
 
+      def subcategories
+        sub_category_ids = structure_element.child_elements.map { |c| c.elementId }
+        Category.where(id: sub_category_ids)
+      end
+
       def locales
         element_locales.map(&:source_locale)
       end
