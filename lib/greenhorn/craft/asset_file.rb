@@ -193,6 +193,8 @@ module Greenhorn
           value = value.gsub(/\{baseUrl}/, ENV['BASE_URL'])
         end
 
+        value = value.gsub(%r{(?<!:)//}, '/') # get rid of any double slashes
+
         value
       end
     end
