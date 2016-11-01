@@ -13,16 +13,21 @@ module Greenhorn
         def table
           'tags'
         end
+
+        def find_by_slug(slug)
+        end
       end
 
       before_create do
         self.element = Element.create!(
           type: 'Tag',
+          slug: @slug,
           content: Content.new(title: @attrs[:title])
         )
       end
 
       def assign_attributes(attrs)
+        @slug = attrs.delete(:slug) || Greenhorn::Utility::Slug.new(attrs[:title])
         @attrs = attrs
         super(attrs)
       end

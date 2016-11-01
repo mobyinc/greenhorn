@@ -45,6 +45,7 @@ module Greenhorn
       def assign_attributes(attrs)
         attrs = attrs.with_indifferent_access
         field_attrs = field_attributes(attrs)
+
         if field_attrs.present? && verify_fields_attached?
           (attrs[field_layout_method] || send(field_layout_method)).verify_fields_attached!(field_attrs.keys)
         end
