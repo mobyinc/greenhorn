@@ -28,6 +28,10 @@ module Greenhorn
         update(group_locales: group_locales)
       end
 
+      def ordered_categories
+        categories.joins(:structure_element).order('craft_structureelements.lft')
+      end
+
       def initialize(attrs)
         attrs[:hasUrls] = false if attrs[:hasUrls].nil?
         super(attrs)
