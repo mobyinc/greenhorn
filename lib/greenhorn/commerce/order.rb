@@ -67,6 +67,7 @@ module Greenhorn
       belongs_to :status, foreign_key: 'orderStatusId', class_name: 'OrderStatus'
       has_many :histories, foreign_key: 'orderId', class_name: 'OrderHistory'
       has_many :line_items, foreign_key: 'orderId'
+      has_many :adjustments, foreign_key: 'orderId'
 
       before_create do
         create_element(type: 'Order')
@@ -133,6 +134,11 @@ module Greenhorn
           message: message
         )
         update(status: new_status)
+      end
+
+      def total_shipping_cost
+        itemShippingCost = line_items.map(&:shippingCost).sum
+        baseShippingCost + itemShippingCost
       end
 
       private
