@@ -7,13 +7,13 @@ module Greenhorn
         'elements'
       end
 
-      has_many :contents, foreign_key: 'elementId'
-      has_one :structure_element, foreign_key: 'elementId'
-      has_many :element_locales, foreign_key: 'elementId'
-      has_many :matrix_blocks, foreign_key: 'ownerId', class_name: 'MatrixBlock'
-      has_many :neo_blocks, foreign_key: 'ownerId', class_name: 'Neo::Block'
-      has_many :relations_to, foreign_key: 'sourceId', class_name: 'Relation'
-      has_many :relations_from, foreign_key: 'targetId', class_name: 'Relation'
+      has_many :contents, foreign_key: 'elementId', dependent: :destroy
+      has_one :structure_element, foreign_key: 'elementId', dependent: :destroy
+      has_many :element_locales, foreign_key: 'elementId', dependent: :destroy
+      has_many :matrix_blocks, foreign_key: 'ownerId', class_name: 'MatrixBlock', dependent: :destroy
+      has_many :neo_blocks, foreign_key: 'ownerId', class_name: 'Neo::Block', dependent: :destroy
+      has_many :relations_to, foreign_key: 'sourceId', class_name: 'Relation', dependent: :destroy
+      has_many :relations_from, foreign_key: 'targetId', class_name: 'Relation', dependent: :destroy
 
       delegate :slug, to: :element_locale, allow_nil: true
       delegate :title, to: :content

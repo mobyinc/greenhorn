@@ -5,7 +5,7 @@ module Greenhorn
         base.class_eval do
           base.extend(ClassMethods)
 
-          belongs_to :element, foreign_key: 'id', class_name: 'Craft::Element'
+          belongs_to :element, foreign_key: 'id', class_name: 'Craft::Element', dependent: :destroy
           has_one :structure_element, through: :element, class_name: 'Craft::StructureElement'
           has_many :element_locales, through: :element, class_name: 'Craft::ElementLocale'
           has_many :contents, through: :element, class_name: 'Craft::Content'
