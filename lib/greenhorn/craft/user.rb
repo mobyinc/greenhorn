@@ -3,6 +3,8 @@ require 'greenhorn/craft/base_model'
 module Greenhorn
   module Craft
     class User < BaseModel
+      include ContentBehaviors
+
       class << self
         def table
           'users'
@@ -44,8 +46,6 @@ module Greenhorn
           super(attrs)
         end
       end
-
-      belongs_to :element, foreign_key: 'id'
 
       validates :email, :username, presence: true
 
@@ -101,6 +101,10 @@ module Greenhorn
       # @return [User]
       def destroy
         super
+      end
+
+      def field_layout
+        Greenhorn::Craft::FieldLayout.find_by(type: 'User')
       end
     end
   end
