@@ -106,6 +106,10 @@ module Greenhorn
       def field_layout
         Greenhorn::Craft::FieldLayout.find_by(type: 'User')
       end
+
+      def verify_fields_attached?
+        false
+      end
     end
   end
 end
