@@ -7,7 +7,7 @@
 #
 # Host: localhost (MySQL 5.6.25)
 # Database: greenhorn_dev
-# Generation Time: 2016-08-16 21:02:50 +0000
+# Generation Time: 2016-11-30 00:01:49 +0000
 # ************************************************************
 
 
@@ -83,7 +83,7 @@ CREATE TABLE `craft_assetindexdata` (
   `sessionId` varchar(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `sourceId` int(10) NOT NULL,
   `offset` int(10) NOT NULL,
-  `uri` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `uri` text COLLATE utf8_unicode_ci,
   `size` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `recordId` int(10) DEFAULT NULL,
   `dateCreated` datetime NOT NULL,
@@ -248,6 +248,8 @@ DROP TABLE IF EXISTS `craft_commerce_addresses`;
 
 CREATE TABLE `craft_commerce_addresses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `attention` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `firstName` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `lastName` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `countryId` int(10) DEFAULT NULL,
@@ -260,6 +262,7 @@ CREATE TABLE `craft_commerce_addresses` (
   `alternativePhone` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `businessName` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `businessTaxId` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `businessId` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `stateName` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `dateCreated` datetime NOT NULL,
   `dateUpdated` datetime NOT NULL,
@@ -591,6 +594,15 @@ CREATE TABLE `craft_commerce_customers` (
   CONSTRAINT `craft_commerce_customers_userId_fk` FOREIGN KEY (`userId`) REFERENCES `craft_users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+LOCK TABLES `craft_commerce_customers` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_customers` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_customers` (`id`, `userId`, `email`, `lastUsedBillingAddressId`, `lastUsedShippingAddressId`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,1,'admin@greenhorn.dev',NULL,NULL,'2016-08-22 19:21:11','2016-08-22 19:21:11','faf56a61-46f8-4e61-a82c-64b6289173bd');
+
+/*!40000 ALTER TABLE `craft_commerce_customers` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table craft_commerce_customers_addresses
@@ -696,6 +708,7 @@ CREATE TABLE `craft_commerce_discounts` (
   `dateTo` datetime DEFAULT NULL,
   `purchaseTotal` int(10) NOT NULL DEFAULT '0',
   `purchaseQty` int(10) NOT NULL DEFAULT '0',
+  `maxPurchaseQty` int(11) DEFAULT '0',
   `baseDiscount` decimal(14,4) NOT NULL DEFAULT '0.0000',
   `perItemDiscount` decimal(14,4) NOT NULL DEFAULT '0.0000',
   `percentDiscount` decimal(14,4) NOT NULL DEFAULT '0.0000',
@@ -705,6 +718,8 @@ CREATE TABLE `craft_commerce_discounts` (
   `allProducts` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `allProductTypes` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `enabled` tinyint(1) unsigned NOT NULL DEFAULT '1',
+  `stopProcessing` tinyint(1) DEFAULT NULL,
+  `sortOrder` int(11) DEFAULT NULL,
   `dateCreated` datetime NOT NULL,
   `dateUpdated` datetime NOT NULL,
   `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
@@ -725,7 +740,8 @@ CREATE TABLE `craft_commerce_emails` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `subject` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `to` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `recipientType` enum('customer','custom') COLLATE utf8_unicode_ci DEFAULT 'customer',
+  `to` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `bcc` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `enabled` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `templatePath` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
@@ -764,6 +780,7 @@ CREATE TABLE `craft_commerce_lineitems` (
   `note` text COLLATE utf8_unicode_ci,
   `snapshot` text COLLATE utf8_unicode_ci NOT NULL,
   `taxCategoryId` int(10) NOT NULL,
+  `shippingCategoryId` int(11) DEFAULT NULL,
   `dateCreated` datetime NOT NULL,
   `dateUpdated` datetime NOT NULL,
   `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
@@ -854,7 +871,9 @@ CREATE TABLE `craft_commerce_orders` (
   `dateOrdered` datetime DEFAULT NULL,
   `datePaid` datetime DEFAULT NULL,
   `currency` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `paymentCurrency` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `lastIp` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `orderLocale` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `message` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `returnUrl` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `cancelUrl` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -903,7 +922,7 @@ LOCK TABLES `craft_commerce_ordersettings` WRITE;
 
 INSERT INTO `craft_commerce_ordersettings` (`id`, `fieldLayoutId`, `name`, `handle`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(1,6,'Order','order','2016-08-16 21:02:39','2016-08-16 21:02:39','31972dab-b8d7-4670-9991-569b6faf6ee5');
+	(1,11,'Order','order','2016-08-16 21:02:39','2016-08-22 21:55:54','31972dab-b8d7-4670-9991-569b6faf6ee5');
 
 /*!40000 ALTER TABLE `craft_commerce_ordersettings` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -960,6 +979,34 @@ VALUES
 UNLOCK TABLES;
 
 
+# Dump of table craft_commerce_paymentcurrencies
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `craft_commerce_paymentcurrencies`;
+
+CREATE TABLE `craft_commerce_paymentcurrencies` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `iso` varchar(3) COLLATE utf8_unicode_ci NOT NULL,
+  `primary` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `rate` decimal(14,4) NOT NULL DEFAULT '0.0000',
+  `dateCreated` datetime NOT NULL,
+  `dateUpdated` datetime NOT NULL,
+  `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `craft_commerce_currencies_iso_unq_idx` (`iso`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+LOCK TABLES `craft_commerce_paymentcurrencies` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_paymentcurrencies` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_paymentcurrencies` (`id`, `iso`, `primary`, `rate`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,'USD',1,1.0000,'2016-11-30 00:01:26','2016-11-30 00:01:26','fc2a31d2-03c5-42e8-af3d-e2ee8fab7e69');
+
+/*!40000 ALTER TABLE `craft_commerce_paymentcurrencies` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
 # Dump of table craft_commerce_paymentmethods
 # ------------------------------------------------------------
 
@@ -1002,6 +1049,7 @@ CREATE TABLE `craft_commerce_products` (
   `id` int(11) NOT NULL,
   `typeId` int(11) DEFAULT NULL,
   `taxCategoryId` int(11) NOT NULL,
+  `shippingCategoryId` int(11) NOT NULL,
   `postDate` datetime DEFAULT NULL,
   `expiryDate` datetime DEFAULT NULL,
   `promotable` tinyint(1) unsigned NOT NULL DEFAULT '0',
@@ -1021,7 +1069,9 @@ CREATE TABLE `craft_commerce_products` (
   KEY `craft_commerce_products_postDate_idx` (`postDate`),
   KEY `craft_commerce_products_expiryDate_idx` (`expiryDate`),
   KEY `craft_commerce_products_taxCategoryId_fk` (`taxCategoryId`),
+  KEY `craft_commerce_products_shippingCategoryId_fk` (`shippingCategoryId`),
   CONSTRAINT `craft_commerce_products_id_fk` FOREIGN KEY (`id`) REFERENCES `craft_elements` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `craft_commerce_products_shippingCategoryId_fk` FOREIGN KEY (`shippingCategoryId`) REFERENCES `craft_commerce_shippingcategories` (`id`),
   CONSTRAINT `craft_commerce_products_taxCategoryId_fk` FOREIGN KEY (`taxCategoryId`) REFERENCES `craft_commerce_taxcategories` (`id`),
   CONSTRAINT `craft_commerce_products_typeId_fk` FOREIGN KEY (`typeId`) REFERENCES `craft_commerce_producttypes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
@@ -1029,12 +1079,12 @@ CREATE TABLE `craft_commerce_products` (
 LOCK TABLES `craft_commerce_products` WRITE;
 /*!40000 ALTER TABLE `craft_commerce_products` DISABLE KEYS */;
 
-INSERT INTO `craft_commerce_products` (`id`, `typeId`, `taxCategoryId`, `postDate`, `expiryDate`, `promotable`, `freeShipping`, `defaultVariantId`, `defaultSku`, `defaultPrice`, `defaultHeight`, `defaultLength`, `defaultWidth`, `defaultWeight`, `dateCreated`, `dateUpdated`, `uid`)
+INSERT INTO `craft_commerce_products` (`id`, `typeId`, `taxCategoryId`, `shippingCategoryId`, `postDate`, `expiryDate`, `promotable`, `freeShipping`, `defaultVariantId`, `defaultSku`, `defaultPrice`, `defaultHeight`, `defaultLength`, `defaultWidth`, `defaultWeight`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(4,1,1,'2016-08-16 21:02:39',NULL,1,0,5,'A New Toga',10.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:39','2016-08-16 21:02:39','16772a0f-7593-4d75-8f14-5a16d391f9d9'),
-	(6,1,1,'2016-08-16 21:02:39',NULL,1,0,7,'Parka with Stripes on Back',20.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:39','2016-08-16 21:02:40','4afed2b8-8c23-409d-b8ea-a4fb0769b9bb'),
-	(8,1,1,'2016-08-16 21:02:40',NULL,1,0,9,'Romper for a Red Eye',30.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:40','2016-08-16 21:02:40','290ac69c-9ee3-4b0b-bfa4-85cbeed79151'),
-	(10,1,1,'2016-08-16 21:02:40',NULL,1,0,11,'The Fleece Awakens',40.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:40','2016-08-16 21:02:40','8767b2a5-cde5-4fd1-bbba-ad16c527fa05');
+	(4,1,1,1,'2016-08-16 21:02:39',NULL,1,0,5,'A New Toga',10.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:39','2016-11-30 00:01:27','16772a0f-7593-4d75-8f14-5a16d391f9d9'),
+	(6,1,1,1,'2016-08-16 21:02:39',NULL,1,0,7,'Parka with Stripes on Back',20.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:39','2016-11-30 00:01:27','4afed2b8-8c23-409d-b8ea-a4fb0769b9bb'),
+	(8,1,1,1,'2016-08-16 21:02:40',NULL,1,0,9,'Romper for a Red Eye',30.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:40','2016-11-30 00:01:27','290ac69c-9ee3-4b0b-bfa4-85cbeed79151'),
+	(10,1,1,1,'2016-08-16 21:02:40',NULL,1,0,11,'The Fleece Awakens',40.0000,0.0000,0.0000,0.0000,0.0000,'2016-08-16 21:02:40','2016-11-30 00:01:27','8767b2a5-cde5-4fd1-bbba-ad16c527fa05');
 
 /*!40000 ALTER TABLE `craft_commerce_products` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1057,6 +1107,7 @@ CREATE TABLE `craft_commerce_producttypes` (
   `hasVariantTitleField` tinyint(1) unsigned NOT NULL DEFAULT '1',
   `titleFormat` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `skuFormat` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `descriptionFormat` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `template` varchar(500) COLLATE utf8_unicode_ci DEFAULT NULL,
   `dateCreated` datetime NOT NULL,
   `dateUpdated` datetime NOT NULL,
@@ -1072,9 +1123,9 @@ CREATE TABLE `craft_commerce_producttypes` (
 LOCK TABLES `craft_commerce_producttypes` WRITE;
 /*!40000 ALTER TABLE `craft_commerce_producttypes` DISABLE KEYS */;
 
-INSERT INTO `craft_commerce_producttypes` (`id`, `fieldLayoutId`, `variantFieldLayoutId`, `name`, `handle`, `hasUrls`, `hasDimensions`, `hasVariants`, `hasVariantTitleField`, `titleFormat`, `skuFormat`, `template`, `dateCreated`, `dateUpdated`, `uid`)
+INSERT INTO `craft_commerce_producttypes` (`id`, `fieldLayoutId`, `variantFieldLayoutId`, `name`, `handle`, `hasUrls`, `hasDimensions`, `hasVariants`, `hasVariantTitleField`, `titleFormat`, `skuFormat`, `descriptionFormat`, `template`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(1,9,10,'Clothing','clothing',1,1,0,0,'{product.title}',NULL,'commerce/products/_product','2016-08-16 21:02:39','2016-08-16 21:02:39','064582a9-f788-498e-b93c-692659ad4ee7');
+	(1,9,10,'Clothing','clothing',1,1,0,0,'{product.title}',NULL,'{% if object.product.type.hasVariants %}{{ object.product.title }} - {{ object.title}}{% else %}{{ object.title}}{% endif %}','commerce/products/_product','2016-08-16 21:02:39','2016-11-30 00:01:26','064582a9-f788-498e-b93c-692659ad4ee7');
 
 /*!40000 ALTER TABLE `craft_commerce_producttypes` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1108,6 +1159,66 @@ VALUES
 	(1,1,'en_us','commerce/products/{slug}','2016-08-16 21:02:39','2016-08-16 21:02:39','16d5647f-a856-4f5b-a39e-004ce10aa414');
 
 /*!40000 ALTER TABLE `craft_commerce_producttypes_i18n` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
+# Dump of table craft_commerce_producttypes_shippingcategories
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `craft_commerce_producttypes_shippingcategories`;
+
+CREATE TABLE `craft_commerce_producttypes_shippingcategories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `productTypeId` int(11) NOT NULL,
+  `shippingCategoryId` int(11) NOT NULL,
+  `dateCreated` datetime NOT NULL,
+  `dateUpdated` datetime NOT NULL,
+  `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `craf_commer_productty_shippingcateg_productTy_shippingCateg_un_i` (`productTypeId`,`shippingCategoryId`),
+  KEY `craft_commerc_producttype_shippingcategorie_shippingCategoryI_fk` (`shippingCategoryId`),
+  CONSTRAINT `craft_commerc_producttype_shippingcategorie_shippingCategoryI_fk` FOREIGN KEY (`shippingCategoryId`) REFERENCES `craft_commerce_shippingcategories` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `craft_commerce_producttypes_shippingcategories_productTypeId_fk` FOREIGN KEY (`productTypeId`) REFERENCES `craft_commerce_producttypes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+LOCK TABLES `craft_commerce_producttypes_shippingcategories` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_producttypes_shippingcategories` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_producttypes_shippingcategories` (`id`, `productTypeId`, `shippingCategoryId`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,1,1,'2016-11-30 00:01:27','2016-11-30 00:01:27','ec086d46-851f-48fe-a366-35ce74934345');
+
+/*!40000 ALTER TABLE `craft_commerce_producttypes_shippingcategories` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
+# Dump of table craft_commerce_producttypes_taxcategories
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `craft_commerce_producttypes_taxcategories`;
+
+CREATE TABLE `craft_commerce_producttypes_taxcategories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `productTypeId` int(11) NOT NULL,
+  `taxCategoryId` int(11) NOT NULL,
+  `dateCreated` datetime NOT NULL,
+  `dateUpdated` datetime NOT NULL,
+  `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `craf_commerc_producttyp_taxcategori_productType_taxCategory_un_i` (`productTypeId`,`taxCategoryId`),
+  KEY `craft_commerce_producttypes_taxcategories_taxCategoryId_fk` (`taxCategoryId`),
+  CONSTRAINT `craft_commerce_producttypes_taxcategories_productTypeId_fk` FOREIGN KEY (`productTypeId`) REFERENCES `craft_commerce_producttypes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `craft_commerce_producttypes_taxcategories_taxCategoryId_fk` FOREIGN KEY (`taxCategoryId`) REFERENCES `craft_commerce_taxcategories` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+LOCK TABLES `craft_commerce_producttypes_taxcategories` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_producttypes_taxcategories` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_producttypes_taxcategories` (`id`, `productTypeId`, `taxCategoryId`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,1,1,'2016-11-30 00:01:27','2016-11-30 00:01:27','f76c3e30-ecf0-4362-b62d-3a15bbe34c57');
+
+/*!40000 ALTER TABLE `craft_commerce_producttypes_taxcategories` ENABLE KEYS */;
 UNLOCK TABLES;
 
 
@@ -1230,6 +1341,35 @@ CREATE TABLE `craft_commerce_sales` (
 
 
 
+# Dump of table craft_commerce_shippingcategories
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `craft_commerce_shippingcategories`;
+
+CREATE TABLE `craft_commerce_shippingcategories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `handle` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `default` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `dateCreated` datetime NOT NULL,
+  `dateUpdated` datetime NOT NULL,
+  `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `craft_commerce_shippingcategories_handle_unq_idx` (`handle`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+LOCK TABLES `craft_commerce_shippingcategories` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_shippingcategories` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_shippingcategories` (`id`, `name`, `handle`, `description`, `default`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,'General','general','General shipping category',1,'2016-11-30 00:01:26','2016-11-30 00:01:26','9d0b5fec-c21b-430d-b895-ea460d602008');
+
+/*!40000 ALTER TABLE `craft_commerce_shippingcategories` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
 # Dump of table craft_commerce_shippingmethods
 # ------------------------------------------------------------
 
@@ -1255,6 +1395,40 @@ VALUES
 	(1,'Free Shipping','freeShipping',1,'2016-08-16 21:02:39','2016-08-16 21:02:39','8e2bc727-fa66-43c9-97da-4a25674ad0a5');
 
 /*!40000 ALTER TABLE `craft_commerce_shippingmethods` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
+# Dump of table craft_commerce_shippingrule_categories
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `craft_commerce_shippingrule_categories`;
+
+CREATE TABLE `craft_commerce_shippingrule_categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `shippingRuleId` int(11) DEFAULT NULL,
+  `shippingCategoryId` int(11) DEFAULT NULL,
+  `condition` enum('allow','disallow','require') COLLATE utf8_unicode_ci NOT NULL,
+  `perItemRate` decimal(14,4) DEFAULT NULL,
+  `weightRate` decimal(14,4) DEFAULT NULL,
+  `percentageRate` decimal(14,4) DEFAULT NULL,
+  `dateCreated` datetime NOT NULL,
+  `dateUpdated` datetime NOT NULL,
+  `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `craft_commerce_shippingrule_categories_shippingRuleId_idx` (`shippingRuleId`),
+  KEY `craft_commerce_shippingrule_categories_shippingCategoryId_idx` (`shippingCategoryId`),
+  CONSTRAINT `craft_commerce_shippingrule_categories_shippingCategoryId_fk` FOREIGN KEY (`shippingCategoryId`) REFERENCES `craft_commerce_shippingcategories` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `craft_commerce_shippingrule_categories_shippingRuleId_fk` FOREIGN KEY (`shippingRuleId`) REFERENCES `craft_commerce_shippingrules` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+LOCK TABLES `craft_commerce_shippingrule_categories` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_shippingrule_categories` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_shippingrule_categories` (`id`, `shippingRuleId`, `shippingCategoryId`, `condition`, `perItemRate`, `weightRate`, `percentageRate`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,1,1,'allow',NULL,NULL,NULL,'2016-11-30 00:01:27','2016-11-30 00:01:27','08710466-c364-4c3c-8582-484e965ce6a1');
+
+/*!40000 ALTER TABLE `craft_commerce_shippingrule_categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
 
@@ -1510,7 +1684,7 @@ CREATE TABLE `craft_commerce_taxrates` (
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `rate` decimal(14,4) NOT NULL,
   `include` tinyint(1) unsigned NOT NULL DEFAULT '0',
-  `showInLabel` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `isVat` tinyint(1) DEFAULT '0',
   `taxable` enum('price','shipping','price_shipping') COLLATE utf8_unicode_ci NOT NULL,
   `dateCreated` datetime NOT NULL,
   `dateUpdated` datetime NOT NULL,
@@ -1522,6 +1696,15 @@ CREATE TABLE `craft_commerce_taxrates` (
   CONSTRAINT `craft_commerce_taxrates_taxZoneId_fk` FOREIGN KEY (`taxZoneId`) REFERENCES `craft_commerce_taxzones` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+LOCK TABLES `craft_commerce_taxrates` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_taxrates` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_taxrates` (`id`, `taxZoneId`, `taxCategoryId`, `name`, `rate`, `include`, `isVat`, `taxable`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,1,1,'test',0.0500,0,0,'price','2016-08-18 21:15:27','2016-08-18 21:15:27','9c043680-e303-4744-8dae-eb0f5a6b94e4');
+
+/*!40000 ALTER TABLE `craft_commerce_taxrates` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table craft_commerce_taxzone_countries
@@ -1566,6 +1749,15 @@ CREATE TABLE `craft_commerce_taxzone_states` (
   CONSTRAINT `craft_commerce_taxzone_states_taxZoneId_fk` FOREIGN KEY (`taxZoneId`) REFERENCES `craft_commerce_taxzones` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+LOCK TABLES `craft_commerce_taxzone_states` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_taxzone_states` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_taxzone_states` (`id`, `taxZoneId`, `stateId`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,1,2,'2016-08-18 21:15:06','2016-08-18 21:15:06','2d373a5a-6755-4d1c-b447-040026180580');
+
+/*!40000 ALTER TABLE `craft_commerce_taxzone_states` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table craft_commerce_taxzones
@@ -1586,6 +1778,15 @@ CREATE TABLE `craft_commerce_taxzones` (
   UNIQUE KEY `craft_commerce_taxzones_name_unq_idx` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+LOCK TABLES `craft_commerce_taxzones` WRITE;
+/*!40000 ALTER TABLE `craft_commerce_taxzones` DISABLE KEYS */;
+
+INSERT INTO `craft_commerce_taxzones` (`id`, `name`, `description`, `countryBased`, `default`, `dateCreated`, `dateUpdated`, `uid`)
+VALUES
+	(1,'adasd','',0,0,'2016-08-18 21:15:06','2016-08-18 21:15:06','b18634c2-ff82-4346-a00b-d23b571f43a3');
+
+/*!40000 ALTER TABLE `craft_commerce_taxzones` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table craft_commerce_transactions
@@ -1601,9 +1802,14 @@ CREATE TABLE `craft_commerce_transactions` (
   `hash` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `type` enum('authorize','capture','purchase','refund') COLLATE utf8_unicode_ci NOT NULL,
   `amount` decimal(17,4) DEFAULT NULL,
+  `paymentAmount` decimal(14,4) DEFAULT NULL,
+  `paymentRate` decimal(14,4) DEFAULT NULL,
   `status` enum('pending','redirect','success','failed') COLLATE utf8_unicode_ci NOT NULL,
+  `currency` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `paymentCurrency` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `reference` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `message` text COLLATE utf8_unicode_ci,
+  `code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `response` text COLLATE utf8_unicode_ci,
   `orderId` int(10) NOT NULL,
   `dateCreated` datetime NOT NULL,
@@ -1677,6 +1883,7 @@ CREATE TABLE `craft_content` (
   `locale` char(12) COLLATE utf8_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `field_body` text COLLATE utf8_unicode_ci,
+  `field_asdasdsad` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `dateCreated` datetime NOT NULL,
   `dateUpdated` datetime NOT NULL,
   `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
@@ -1691,19 +1898,19 @@ CREATE TABLE `craft_content` (
 LOCK TABLES `craft_content` WRITE;
 /*!40000 ALTER TABLE `craft_content` DISABLE KEYS */;
 
-INSERT INTO `craft_content` (`id`, `elementId`, `locale`, `title`, `field_body`, `dateCreated`, `dateUpdated`, `uid`)
+INSERT INTO `craft_content` (`id`, `elementId`, `locale`, `title`, `field_body`, `field_asdasdsad`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(1,1,'en_us',NULL,NULL,'2016-08-04 22:18:04','2016-08-04 22:18:04','b4852cb2-81fc-4b69-a3b5-cc01860b8a23'),
-	(2,2,'en_us','Welcome to Greenhorn.dev!','<p>It’s true, this site doesn’t have a whole lot of content yet, but don’t worry. Our web developers have just installed the CMS, and they’re setting things up for the content editors this very moment. Soon Greenhorn.dev will be an oasis of fresh perspectives, sharp analyses, and astute opinions that will keep you coming back again and again.</p>','2016-08-04 22:18:06','2016-08-04 22:18:06','cb23cf84-e578-429c-9d9e-8a4979ed7365'),
-	(3,3,'en_us','We just installed Craft!','<p>Craft is the CMS that’s powering Greenhorn.dev. It’s beautiful, powerful, flexible, and easy-to-use, and it’s made by Pixel &amp; Tonic. We can’t wait to dive in and see what it’s capable of!</p><!--pagebreak--><p>This is even more captivating content, which you couldn’t see on the News index page because it was entered after a Page Break, and the News index template only likes to show the content on the first page.</p><p>Craft: a nice alternative to Word, if you’re making a website.</p>','2016-08-04 22:18:06','2016-08-04 22:18:06','b45bebd8-a838-40ac-9037-43dfec36c0ec'),
-	(4,4,'en_us','A New Toga',NULL,'2016-08-16 21:02:39','2016-08-16 21:02:39','55cad2b4-604c-49ef-94b3-8b8211ebcd1c'),
-	(5,5,'en_us','A New Toga',NULL,'2016-08-16 21:02:39','2016-08-16 21:02:39','63c4935c-4a1a-41e4-81d3-436725a58d94'),
-	(6,6,'en_us','Parka with Stripes on Back',NULL,'2016-08-16 21:02:39','2016-08-16 21:02:39','a172a1e6-ba91-4ca9-b37d-da9b7864c4c9'),
-	(7,7,'en_us','Parka with Stripes on Back',NULL,'2016-08-16 21:02:39','2016-08-16 21:02:39','8483eb6c-5397-4a32-a0a1-78384e0206c1'),
-	(8,8,'en_us','Romper for a Red Eye',NULL,'2016-08-16 21:02:40','2016-08-16 21:02:40','8ea75cdc-2267-4690-a142-6d855200bc15'),
-	(9,9,'en_us','Romper for a Red Eye',NULL,'2016-08-16 21:02:40','2016-08-16 21:02:40','79355e18-c657-423b-941a-ba334d2e5f55'),
-	(10,10,'en_us','The Fleece Awakens',NULL,'2016-08-16 21:02:40','2016-08-16 21:02:40','00f5a396-c6da-4d11-8275-4d20c65cd57a'),
-	(11,11,'en_us','The Fleece Awakens',NULL,'2016-08-16 21:02:40','2016-08-16 21:02:40','d3243399-41f5-4043-8705-2a7985851250');
+	(1,1,'en_us',NULL,NULL,0,'2016-08-04 22:18:04','2016-08-04 22:18:04','b4852cb2-81fc-4b69-a3b5-cc01860b8a23'),
+	(2,2,'en_us','Welcome to Greenhorn.dev!','<p>It’s true, this site doesn’t have a whole lot of content yet, but don’t worry. Our web developers have just installed the CMS, and they’re setting things up for the content editors this very moment. Soon Greenhorn.dev will be an oasis of fresh perspectives, sharp analyses, and astute opinions that will keep you coming back again and again.</p>',0,'2016-08-04 22:18:06','2016-08-04 22:18:06','cb23cf84-e578-429c-9d9e-8a4979ed7365'),
+	(3,3,'en_us','We just installed Craft!','<p>Craft is the CMS that’s powering Greenhorn.dev. It’s beautiful, powerful, flexible, and easy-to-use, and it’s made by Pixel &amp; Tonic. We can’t wait to dive in and see what it’s capable of!</p><!--pagebreak--><p>This is even more captivating content, which you couldn’t see on the News index page because it was entered after a Page Break, and the News index template only likes to show the content on the first page.</p><p>Craft: a nice alternative to Word, if you’re making a website.</p>',0,'2016-08-04 22:18:06','2016-08-04 22:18:06','b45bebd8-a838-40ac-9037-43dfec36c0ec'),
+	(4,4,'en_us','A New Toga',NULL,0,'2016-08-16 21:02:39','2016-08-16 21:02:39','55cad2b4-604c-49ef-94b3-8b8211ebcd1c'),
+	(5,5,'en_us','A New Toga',NULL,0,'2016-08-16 21:02:39','2016-08-16 21:02:39','63c4935c-4a1a-41e4-81d3-436725a58d94'),
+	(6,6,'en_us','Parka with Stripes on Back',NULL,0,'2016-08-16 21:02:39','2016-08-16 21:02:39','a172a1e6-ba91-4ca9-b37d-da9b7864c4c9'),
+	(7,7,'en_us','Parka with Stripes on Back',NULL,0,'2016-08-16 21:02:39','2016-08-16 21:02:39','8483eb6c-5397-4a32-a0a1-78384e0206c1'),
+	(8,8,'en_us','Romper for a Red Eye',NULL,0,'2016-08-16 21:02:40','2016-08-16 21:02:40','8ea75cdc-2267-4690-a142-6d855200bc15'),
+	(9,9,'en_us','Romper for a Red Eye',NULL,0,'2016-08-16 21:02:40','2016-08-16 21:02:40','79355e18-c657-423b-941a-ba334d2e5f55'),
+	(10,10,'en_us','The Fleece Awakens',NULL,0,'2016-08-16 21:02:40','2016-08-16 21:02:40','00f5a396-c6da-4d11-8275-4d20c65cd57a'),
+	(11,11,'en_us','The Fleece Awakens',NULL,0,'2016-08-16 21:02:40','2016-08-16 21:02:40','d3243399-41f5-4043-8705-2a7985851250');
 
 /*!40000 ALTER TABLE `craft_content` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2069,7 +2276,8 @@ INSERT INTO `craft_fieldlayoutfields` (`id`, `layoutId`, `tabId`, `fieldId`, `re
 VALUES
 	(1,3,1,1,1,1,'2016-08-04 22:18:06','2016-08-04 22:18:06','c085c303-a708-4887-afbe-0597e1122371'),
 	(2,5,2,1,1,1,'2016-08-04 22:18:06','2016-08-04 22:18:06','d0bee922-20aa-4113-ad7e-31e00f2f975c'),
-	(3,5,2,2,0,2,'2016-08-04 22:18:06','2016-08-04 22:18:06','62f60a1b-da84-46ac-87ba-64397c56f0cf');
+	(3,5,2,2,0,2,'2016-08-04 22:18:06','2016-08-04 22:18:06','62f60a1b-da84-46ac-87ba-64397c56f0cf'),
+	(4,11,3,1,0,1,'2016-08-22 21:55:54','2016-08-22 21:55:54','18106990-9dc2-4a59-87bc-7839762da37f');
 
 /*!40000 ALTER TABLE `craft_fieldlayoutfields` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2098,11 +2306,11 @@ VALUES
 	(1,'Tag','2016-08-04 22:18:06','2016-08-04 22:18:06','c8fd8288-b1f4-4a40-985e-3ec2a5bf553b'),
 	(3,'Entry','2016-08-04 22:18:06','2016-08-04 22:18:06','f8637e9b-4a3f-45e3-bf48-1e45f24d0d93'),
 	(5,'Entry','2016-08-04 22:18:06','2016-08-04 22:18:06','6e052e48-7323-400a-9ba9-b534ad9c8740'),
-	(6,'Commerce_Order','2016-08-16 21:02:39','2016-08-16 21:02:39','1361b614-d9c5-402f-9581-6db6c726351e'),
 	(7,'Commerce_Product','2016-08-16 21:02:39','2016-08-16 21:02:39','00d9e5ef-9f3e-4d87-8b7a-b06757b60891'),
 	(8,'Commerce_Variant','2016-08-16 21:02:39','2016-08-16 21:02:39','4ee1c537-3a79-4553-85b2-d9fdab7df6f1'),
 	(9,'Commerce_Product','2016-08-16 21:02:39','2016-08-16 21:02:39','ce7d6f25-8e7b-4ccf-b45e-71ae0b741668'),
-	(10,'Commerce_Variant','2016-08-16 21:02:39','2016-08-16 21:02:39','19b56ced-136d-4e2b-b9df-cfb733955ec3');
+	(10,'Commerce_Variant','2016-08-16 21:02:39','2016-08-16 21:02:39','19b56ced-136d-4e2b-b9df-cfb733955ec3'),
+	(11,'Commerce_Order','2016-08-22 21:55:54','2016-08-22 21:55:54','890eeef1-ef09-4e93-8d5b-7fefd09e1d8c');
 
 /*!40000 ALTER TABLE `craft_fieldlayouts` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2133,7 +2341,8 @@ LOCK TABLES `craft_fieldlayouttabs` WRITE;
 INSERT INTO `craft_fieldlayouttabs` (`id`, `layoutId`, `name`, `sortOrder`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
 	(1,3,'Content',1,'2016-08-04 22:18:06','2016-08-04 22:18:06','3bb5c2c7-a135-4548-9c21-4b7a384269ae'),
-	(2,5,'Content',1,'2016-08-04 22:18:06','2016-08-04 22:18:06','787a4fd1-2e3e-4093-a383-4ebdaa768754');
+	(2,5,'Content',1,'2016-08-04 22:18:06','2016-08-04 22:18:06','787a4fd1-2e3e-4093-a383-4ebdaa768754'),
+	(3,11,'Tab 1',1,'2016-08-22 21:55:54','2016-08-22 21:55:54','487df599-9bdc-431f-8cac-ddebfa18adc4');
 
 /*!40000 ALTER TABLE `craft_fieldlayouttabs` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2170,7 +2379,8 @@ LOCK TABLES `craft_fields` WRITE;
 INSERT INTO `craft_fields` (`id`, `groupId`, `name`, `handle`, `context`, `instructions`, `translatable`, `type`, `settings`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
 	(1,1,'Body','body','global',NULL,1,'RichText','{\"configFile\":\"Standard.json\",\"columnType\":\"text\"}','2016-08-04 22:18:06','2016-08-04 22:18:06','d51b19f9-56f3-4982-b971-b95bcfc09a1e'),
-	(2,1,'Tags','tags','global',NULL,0,'Tags','{\"source\":\"taggroup:1\"}','2016-08-04 22:18:06','2016-08-04 22:18:06','9f2cf121-1405-413d-8e4b-1c1594e75f49');
+	(2,1,'Tags','tags','global',NULL,0,'Tags','{\"source\":\"taggroup:1\"}','2016-08-04 22:18:06','2016-08-04 22:18:06','9f2cf121-1405-413d-8e4b-1c1594e75f49'),
+	(3,1,'asdasdsad','asdasdsad','global','',0,'Lightswitch','{\"default\":\"1\"}','2016-08-29 22:52:48','2016-08-29 22:52:48','dbea0f00-79ff-4f26-99e0-c413d0f8bd80');
 
 /*!40000 ALTER TABLE `craft_fields` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2228,7 +2438,7 @@ LOCK TABLES `craft_info` WRITE;
 
 INSERT INTO `craft_info` (`id`, `version`, `build`, `schemaVersion`, `releaseDate`, `edition`, `siteName`, `siteUrl`, `timezone`, `on`, `maintenance`, `track`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(1,'2.6',2903,'2.6.5','2016-08-02 23:22:42',0,'Greenhorn','http://greenhorn.dev','UTC',1,0,'stable','2016-08-04 22:18:01','2016-08-04 22:18:01','f761274b-55e2-46df-8828-62495c415b31');
+	(1,'2.6',2950,'2.6.8','2016-10-28 18:28:13',0,'Greenhorn','http://greenhorn.dev','UTC',1,0,'stable','2016-08-04 22:18:01','2016-11-30 00:01:27','f761274b-55e2-46df-8828-62495c415b31');
 
 /*!40000 ALTER TABLE `craft_info` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2405,7 +2615,30 @@ VALUES
 	(63,1,'m160405_010101_Commerce_FixDefaultVariantId','2016-08-16 21:02:37','2016-08-16 21:02:37','2016-08-16 21:02:37','edbec91b-6454-4a8a-9ad3-60c7b469795e'),
 	(64,1,'m160406_010101_Commerce_RemoveUnusedAuthorId','2016-08-16 21:02:37','2016-08-16 21:02:37','2016-08-16 21:02:37','262281d1-68ba-479e-bf04-1107bd3b59b0'),
 	(65,1,'m160425_010101_Commerce_DeleteCountriesAndStates','2016-08-16 21:02:37','2016-08-16 21:02:37','2016-08-16 21:02:37','3f890b2e-5fd0-4459-b4e8-e524758bd3d1'),
-	(66,1,'m160606_010101_Commerce_PerEmailLimitOnDiscount','2016-08-16 21:02:37','2016-08-16 21:02:37','2016-08-16 21:02:37','189f0b39-ed29-47b6-a341-b1d98dd47e8b');
+	(66,1,'m160606_010101_Commerce_PerEmailLimitOnDiscount','2016-08-16 21:02:37','2016-08-16 21:02:37','2016-08-16 21:02:37','189f0b39-ed29-47b6-a341-b1d98dd47e8b'),
+	(67,NULL,'m160829_000000_pending_user_content_cleanup','2016-11-30 00:01:18','2016-11-30 00:01:18','2016-11-30 00:01:18','3c10783e-d128-48fa-b180-51d3f28afcec'),
+	(68,NULL,'m160830_000000_asset_index_uri_increase','2016-11-30 00:01:18','2016-11-30 00:01:18','2016-11-30 00:01:18','c63ab72d-5592-4bdc-af8f-7a5361d1a56d'),
+	(69,NULL,'m160919_000000_usergroup_handle_title_unique','2016-11-30 00:01:18','2016-11-30 00:01:18','2016-11-30 00:01:18','140aec3c-8552-4f59-af80-1bec8580933b'),
+	(70,1,'m160510_010101_Commerce_EmailRecipientType','2016-11-30 00:01:25','2016-11-30 00:01:25','2016-11-30 00:01:25','06944136-6fff-4f93-a93f-d09bb2678377'),
+	(71,1,'m160706_010101_Commerce_Currencies','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','42e67126-9fdb-4e18-b6a3-4d2374c88df4'),
+	(72,1,'m160806_010101_Commerce_RemoveShowInLabel','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','4bfd988d-4592-47fc-b55f-b3f401aad99e'),
+	(73,1,'m160806_010102_Commerce_AddVatTaxRateOption','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','720ae637-560a-4fb5-9f99-709df4d888cd'),
+	(74,1,'m160825_010101_Commerce_AddMaxQtyToDiscount','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','2d002f0f-3fed-4e95-9504-fed68cd180f9'),
+	(75,1,'m160826_010101_Commerce_NewAddressFields','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','05effc79-5cc2-40e5-8435-ecb64c3e503b'),
+	(76,1,'m160915_010101_Commerce_RenameCurrencies','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','5732472a-20e8-4eae-b652-7d3922cf58df'),
+	(77,1,'m160916_010102_Commerce_PdfFilenameFormat','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','6386561b-f2fa-4b1e-a31b-c2b827f9867e'),
+	(78,1,'m160917_010103_Commerce_DescriptionFormat','2016-11-30 00:01:26','2016-11-30 00:01:26','2016-11-30 00:01:26','b7a08f39-2d88-4727-853f-a1e0455cf1a7'),
+	(79,1,'m160917_010104_Commerce_ShippingCategories','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','6c002ccf-a610-488a-9e92-940205c59c5f'),
+	(80,1,'m160923_010101_Commerce_OrderLocale','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','a2090577-5ff9-46d7-80ec-431335d21ce3'),
+	(81,1,'m160927_010101_Commerce_ProductTypeShippingTaxCategories','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','27a2940b-b1c5-43ca-8167-46818a40e444'),
+	(82,1,'m160927_010101_Commerce_ShippingRuleCategories','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','f7413b5c-f60f-4811-b756-dba0e8cab715'),
+	(83,1,'m160930_010101_Commerce_RenameDefaultCurrencyToPrimary','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','b28f19ca-98c8-48d8-918b-478523c3030f'),
+	(84,1,'m161001_010101_Commerce_LineItemShippingCat','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','565d6e81-dcf4-4403-83aa-ca4c8094fccf'),
+	(85,1,'m161001_010102_Commerce_DiscountOrdering','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','296a6de3-8b81-4954-a868-635067688226'),
+	(86,1,'m161001_010103_Commerce_DiscountStopProcessing','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','cb613800-e09a-4e84-974f-deace33b1366'),
+	(87,1,'m161001_010104_Commerce_SaveTransactionCode','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','34e0094e-e8c3-49b2-ae0a-1a9372c63654'),
+	(88,1,'m161001_010105_Commerce_RemovePaymentCurrencyName','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','3af52f2c-f1dc-4f91-9454-6d7e238223c1'),
+	(89,1,'m161024_010101_Commerce_FixDefaultShippingAndTaxCategoriesOnProducts','2016-11-30 00:01:27','2016-11-30 00:01:27','2016-11-30 00:01:27','be5ce8ad-320c-4035-9eb6-a3217b024513');
 
 /*!40000 ALTER TABLE `craft_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2437,7 +2670,7 @@ LOCK TABLES `craft_plugins` WRITE;
 
 INSERT INTO `craft_plugins` (`id`, `class`, `version`, `schemaVersion`, `licenseKey`, `licenseKeyStatus`, `enabled`, `settings`, `installDate`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(1,'Commerce','1.1.1213','1.0.13',NULL,'unknown',1,'{\"defaultCurrency\":\"USD\",\"weightUnits\":\"g\",\"dimensionUnits\":\"mm\",\"emailSenderAddress\":null,\"emailSenderName\":null,\"orderPdfPath\":\"commerce\\/_pdf\\/order\"}','2016-08-16 21:02:37','2016-08-16 21:02:37','2016-08-16 21:02:40','1facc0ca-b54d-4e94-9c25-2ea103cadb92');
+	(1,'Commerce','1.2.1327','1.2.72',NULL,'unknown',1,'{\"defaultCurrency\":\"USD\",\"weightUnits\":\"g\",\"dimensionUnits\":\"mm\",\"emailSenderAddress\":null,\"emailSenderName\":null,\"orderPdfPath\":\"commerce\\/_pdf\\/order\",\"orderPdfFilenameFormat\":\"Order-{number}\"}','2016-08-16 21:02:37','2016-08-16 21:02:37','2016-11-30 00:01:27','1facc0ca-b54d-4e94-9c25-2ea103cadb92');
 
 /*!40000 ALTER TABLE `craft_plugins` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2707,7 +2940,9 @@ LOCK TABLES `craft_sessions` WRITE;
 
 INSERT INTO `craft_sessions` (`id`, `userId`, `token`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(1,1,'8849c15ffb691200b37b3e3007ac74037f578716czozMjoiTHFveDdPRWtoaTR4R0kyM0R2RDN0ZEp6YjBjY3JxSHYiOw==','2016-08-04 22:18:06','2016-08-04 22:18:06','29b895e2-d01c-4c70-bcb5-f7752af95fba');
+	(1,1,'8849c15ffb691200b37b3e3007ac74037f578716czozMjoiTHFveDdPRWtoaTR4R0kyM0R2RDN0ZEp6YjBjY3JxSHYiOw==','2016-08-04 22:18:06','2016-08-04 22:18:06','29b895e2-d01c-4c70-bcb5-f7752af95fba'),
+	(2,1,'cbda21a7c0d7546c8ea1645fde15431fc8a1eb67czozMjoiazR1UDlHYlVURjRoTVdQaDlTSFNoM1NrWnJqY35HenciOw==','2016-08-22 19:21:11','2016-08-22 19:21:11','357b127b-df4f-456d-8a87-ff592c32bc88'),
+	(3,1,'44792ff899bb9e85ca57cdcd54b922eab7d1fa9bczozMjoiUFoxaVZlYTV3dktNeWIzRWxGUTN4YzViaHJMamdwV24iOw==','2016-11-29 23:57:43','2016-11-29 23:57:43','319ef4bc-8972-43b2-8806-0d585a0eed19');
 
 /*!40000 ALTER TABLE `craft_sessions` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -2972,7 +3207,9 @@ CREATE TABLE `craft_usergroups` (
   `dateCreated` datetime NOT NULL,
   `dateUpdated` datetime NOT NULL,
   `uid` char(36) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `craft_usergroups_handle_unq_idx` (`handle`),
+  UNIQUE KEY `craft_usergroups_name_unq_idx` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
@@ -3107,7 +3344,7 @@ LOCK TABLES `craft_users` WRITE;
 
 INSERT INTO `craft_users` (`id`, `username`, `photo`, `firstName`, `lastName`, `email`, `password`, `preferredLocale`, `weekStartDay`, `admin`, `client`, `locked`, `suspended`, `pending`, `archived`, `lastLoginDate`, `lastLoginAttemptIPAddress`, `invalidLoginWindowStart`, `invalidLoginCount`, `lastInvalidLoginDate`, `lockoutDate`, `verificationCode`, `verificationCodeIssuedDate`, `unverifiedEmail`, `passwordResetRequired`, `lastPasswordChangeDate`, `dateCreated`, `dateUpdated`, `uid`)
 VALUES
-	(1,'admin',NULL,NULL,NULL,'admin@greenhorn.dev','$2y$13$kMiOkQrG9b48d8Vg8O7.cOc/QvuieGBHZHH08BWobOoGUku3r6XCS',NULL,0,1,0,0,0,0,0,'2016-08-04 22:18:06','::1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,'2016-08-04 22:18:04','2016-08-04 22:18:04','2016-08-04 22:18:06','559c1ea3-4964-41b5-91dc-9fc24256db6c');
+	(1,'admin',NULL,NULL,NULL,'admin@greenhorn.dev','$2y$13$kMiOkQrG9b48d8Vg8O7.cOc/QvuieGBHZHH08BWobOoGUku3r6XCS',NULL,0,1,0,0,0,0,0,'2016-11-29 23:57:43','::1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,'2016-08-04 22:18:04','2016-08-04 22:18:04','2016-11-29 23:57:43','559c1ea3-4964-41b5-91dc-9fc24256db6c');
 
 /*!40000 ALTER TABLE `craft_users` ENABLE KEYS */;
 UNLOCK TABLES;

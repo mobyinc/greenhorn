@@ -42,6 +42,7 @@ module Greenhorn
 
       belongs_to :type, class_name: 'ProductType', foreign_key: 'typeId'
       belongs_to :tax_category, foreign_key: 'taxCategoryId'
+      belongs_to :shipping_category, foreign_key: 'shippingCategoryId'
       belongs_to :default_variant, class_name: 'Variant', foreign_key: 'defaultVariantId'
       has_many :variants, foreign_key: 'productId', dependent: :destroy
       accepts_nested_attributes_for :default_variant
@@ -77,6 +78,7 @@ module Greenhorn
         end
 
         attrs[:tax_category] ||= TaxCategory.default
+        attrs[:shipping_category] ||= ShippingCategory.default
 
         attrs[:element] = Greenhorn::Craft::Element.new(slug: @slug, type: 'Commerce_Product')
 

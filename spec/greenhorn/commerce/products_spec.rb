@@ -21,6 +21,7 @@ RSpec.describe Greenhorn::Commerce::Product do
         )
       end
       let!(:default_tax_category) { Greenhorn::Commerce::TaxCategory.create!(name: 'Default', default: true) }
+      let!(:default_shipping_category) { Greenhorn::Commerce::ShippingCategory.create!(name: 'Default', default: true) }
 
       it 'creates and updates a record with fields' do
         product = described_class.create(
@@ -51,9 +52,10 @@ RSpec.describe Greenhorn::Commerce::Product do
         expect(product.defaultPrice).to eq(9)
         expect(product.type).to eq(product_type)
         expect(product.tax_category).to eq(default_tax_category)
+        expect(product.shipping_category).to eq(default_shipping_category)
         expect(product.promotable).to eq(true)
 
-        default_variant = product.default_variant
+        default_variant = product.reload.default_variant
         expect(default_variant.persisted?).to eq(true)
         expect(default_variant.title).to eq('Moby Dick')
         expect(default_variant.sku).to eq('moby-dick')
