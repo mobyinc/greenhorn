@@ -30,7 +30,7 @@ module Greenhorn
         end
 
         def content_table_name(matrix_handle)
-          "craft_matrixcontent_#{matrix_handle.downcase}"
+          "matrixcontent_#{matrix_handle.downcase}"
         end
 
         def add_table(handle)
