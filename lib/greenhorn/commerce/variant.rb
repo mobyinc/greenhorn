@@ -32,7 +32,7 @@ module Greenhorn
           attrs.delete(:slug)
         end
 
-        attrs[:sortOrder] = attrs[:sortOrder] || attrs[:product].present? ? ((attrs[:product].variants.maximum(:sortOrder) || -1) + 1) : 0
+        # attrs[:sortOrder] = attrs[:sortOrder] || attrs[:product].present? ? ((attrs[:product].variants.maximum(:sortOrder) || -1) + 1) : 0
         super(attrs)
       end
 
